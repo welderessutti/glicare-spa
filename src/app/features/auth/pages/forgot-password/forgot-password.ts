@@ -3,23 +3,22 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   imports: [ReactiveFormsModule],
-  selector: 'app-login',
-  styleUrl: './login.css',
-  templateUrl: './login.html',
+  selector: 'app-forgot-password',
+  styleUrl: './forgot-password.css',
+  templateUrl: './forgot-password.html',
 })
-export class Login {
+export class ForgotPassword {
   private readonly fb = inject(FormBuilder);
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(12)]],
   });
 
-  protected onSubmit(): void {
+  protected onSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const credentials = this.form.getRawValue();
-    console.log(credentials);
+    const email = this.form.getRawValue();
+    console.log(email);
   }
 }
