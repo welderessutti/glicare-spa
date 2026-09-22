@@ -1,0 +1,100 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col bg-gray-300">
+  <div class="flex flex-col mb-2">
+    <label for="fullName">Full name</label>
+    <input
+      id="fullName"
+      formControlName="fullName"
+      autocomplete="name"
+      placeholder="Your Full Name"
+      class="bg-white placeholder-gray-300"
+    />
+
+    @if (form.controls.fullName.touched && form.controls.fullName.hasError('required')) {
+      <span>Full name is mandatory</span>
+    }
+  </div>
+
+  <div class="flex flex-col mb-2">
+    <label for="email">Email</label>
+    <input
+      id="email"
+      type="email"
+      formControlName="email"
+      autocomplete="email"
+      placeholder="your@email.com"
+      class="bg-white placeholder-gray-300"
+    />
+
+    @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+      <span> E-mail is mandatory </span>
+    }
+
+    @if (form.controls.email.touched && form.controls.email.hasError('email')) {
+      <span> Inform a valid e-mail </span>
+    }
+  </div>
+
+  <div class="flex flex-col mb-2">
+    <label for="password">Password</label>
+    <input
+      id="password"
+      type="password"
+      formControlName="password"
+      autocomplete="new-password"
+      placeholder="******"
+      class="bg-white placeholder-gray-300"
+    />
+
+    @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+      <span> Password is mandatory </span>
+    }
+
+    @if (
+      form.controls.password.touched &&
+      (form.controls.password.hasError('minlength') || form.controls.password.hasError('maxlength'))
+    ) {
+      <span> Password character limit invalid </span>
+    }
+  </div>
+
+  <div class="flex flex-col mb-2">
+    <label for="confirmPassword">Confirm password</label>
+    <input
+      id="confirmPassword"
+      type="password"
+      formControlName="confirmPassword"
+      autocomplete="new-password"
+      placeholder="******"
+      class="bg-white placeholder-gray-300"
+    />
+
+    @if (
+      form.controls.confirmPassword.touched && form.controls.confirmPassword.hasError('required')
+    ) {
+      <span> Password is mandatory </span>
+    }
+
+    @if (
+      form.controls.confirmPassword.touched &&
+      (form.controls.confirmPassword.hasError('minlength') ||
+        form.controls.confirmPassword.hasError('maxlength'))
+    ) {
+      <span> Password character limit invalid </span>
+    }
+
+    @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
+      <span>Password doesn't match</span>
+    }
+  </div>
+
+  <button
+    type="submit"
+    [disabled]="form.invalid"
+    [class.opacity-50]="form.invalid"
+    [class.opacity-100]="!form.invalid"
+    [class.cursor-pointer]="!form.invalid"
+    class="bg-gray-700"
+  >
+    Register
+  </button>
+</form>

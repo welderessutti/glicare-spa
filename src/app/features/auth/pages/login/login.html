@@ -1,12 +1,6 @@
-<form
-  [formGroup]="form"
-  (ngSubmit)="onSubmit()"
-  class="flex flex-col bg-gray-300"
->
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col bg-gray-300">
   <div class="flex flex-col mb-2">
-    <label for="email">
-      email
-    </label>
+    <label for="email"> email </label>
 
     <input
       id="email"
@@ -17,25 +11,17 @@
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.email.touched &&
-    form.controls.email.hasError('required')) {
-      <span>
-        E-mail is mandatory
-      </span>
+    @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+      <span> E-mail is mandatory </span>
     }
 
-    @if (form.controls.email.touched &&
-    form.controls.email.hasError('email')) {
-      <span>
-        Inform a valid e-mail
-      </span>
+    @if (form.controls.email.touched && form.controls.email.hasError('email')) {
+      <span> Inform a valid e-mail </span>
     }
   </div>
 
   <div class="flex flex-col mb-2">
-    <label for="password">
-      password
-    </label>
+    <label for="password"> password </label>
 
     <input
       id="password"
@@ -46,25 +32,24 @@
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.password.touched &&
-    form.controls.password.hasError('required')) {
-      <span>
-        Password is mandatory
-      </span>
+    @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+      <span> Password is mandatory </span>
     }
 
-    @if (form.controls.password.touched &&
-    (form.controls.password.hasError('minlength') || form.controls.password.hasError('maxlength'))) {
-      <span>
-        Password character limit invalid
-      </span>
+    @if (
+      form.controls.password.touched &&
+      (form.controls.password.hasError('minlength') || form.controls.password.hasError('maxlength'))
+    ) {
+      <span> Password character limit invalid </span>
     }
   </div>
 
   <button
     type="submit"
     [disabled]="form.invalid"
-    [class]="form.invalid ? 'opacity-50' : 'opacity-100 cursor-pointer'"
+    [class.opacity-50]="form.invalid"
+    [class.opacity-100]="!form.invalid"
+    [class.cursor-pointer]="!form.invalid"
     class="bg-gray-700"
   >
     Sign in

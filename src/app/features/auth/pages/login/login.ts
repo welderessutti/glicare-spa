@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
@@ -8,15 +8,13 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
   templateUrl: './login.html',
 })
 export class Login {
-  private readonly fb = new FormBuilder();
-
+  private readonly fb = inject(FormBuilder);
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-
     password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(12)]],
   });
 
-  onSubmit(): void {
+  protected onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
