@@ -36,11 +36,12 @@
       <span> Password is mandatory </span>
     }
 
-    @if (
-      form.controls.password.touched &&
-      (form.controls.password.hasError('minlength') || form.controls.password.hasError('maxlength'))
-    ) {
-      <span> Password character limit invalid </span>
+    @if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
+      <span> Password must contain at least 8 characters </span>
+    }
+
+    @if (form.controls.password.touched && form.controls.password.hasError('maxlength')) {
+      <span> Password has a 64 character limit </span>
     }
   </div>
 
@@ -48,8 +49,8 @@
     type="submit"
     [disabled]="form.invalid"
     [class.opacity-50]="form.invalid"
-    [class.opacity-100]="!form.invalid"
-    [class.cursor-pointer]="!form.invalid"
+    [class.opacity-100]="form.valid"
+    [class.cursor-pointer]="form.valid"
     class="bg-gray-700"
   >
     Sign in

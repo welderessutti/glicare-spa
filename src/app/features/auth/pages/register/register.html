@@ -49,11 +49,12 @@
       <span> Password is mandatory </span>
     }
 
-    @if (
-      form.controls.password.touched &&
-      (form.controls.password.hasError('minlength') || form.controls.password.hasError('maxlength'))
-    ) {
-      <span> Password character limit invalid </span>
+    @if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
+      <span> Password must contain at least 8 characters </span>
+    }
+
+    @if (form.controls.password.touched && form.controls.password.hasError('maxlength')) {
+      <span> Password has a 64 character limit </span>
     }
   </div>
 
@@ -71,19 +72,11 @@
     @if (
       form.controls.confirmPassword.touched && form.controls.confirmPassword.hasError('required')
     ) {
-      <span> Password is mandatory </span>
-    }
-
-    @if (
-      form.controls.confirmPassword.touched &&
-      (form.controls.confirmPassword.hasError('minlength') ||
-        form.controls.confirmPassword.hasError('maxlength'))
-    ) {
-      <span> Password character limit invalid </span>
+      <span> Password confirmation is mandatory </span>
     }
 
     @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
-      <span>Password doesn't match</span>
+      <span>Passwords don't match</span>
     }
   </div>
 
@@ -91,8 +84,8 @@
     type="submit"
     [disabled]="form.invalid"
     [class.opacity-50]="form.invalid"
-    [class.opacity-100]="!form.invalid"
-    [class.cursor-pointer]="!form.invalid"
+    [class.opacity-100]="form.valid"
+    [class.cursor-pointer]="form.valid"
     class="bg-gray-700"
   >
     Register

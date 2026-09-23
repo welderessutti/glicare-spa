@@ -2,26 +2,24 @@ import { Component, inject } from '@angular/core';
 import {
   Validators,
   ReactiveFormsModule,
+  ValidatorFn,
   AbstractControl,
   ValidationErrors,
-  ValidatorFn,
   NonNullableFormBuilder,
 } from '@angular/forms';
 
 @Component({
   imports: [ReactiveFormsModule],
-  selector: 'app-register',
-  styleUrl: './register.css',
-  templateUrl: './register.html',
+  selector: 'app-reset-password',
+  styleUrl: './reset-password.css',
+  templateUrl: './reset-password.html',
 })
-export class Register {
+export class ResetPassword {
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group(
     {
-      fullName: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
-      confirmPassword: ['', [Validators.required]],
+      newPassword: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
+      confirmNewPassword: ['', [Validators.required]],
     },
     {
       validators: this.passwordMatchValidator(),
@@ -30,23 +28,22 @@ export class Register {
 
   private passwordMatchValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-      const password = control.get('password')?.value;
-      const confirmPassword = control.get('confirmPassword')?.value;
+      const newPassword = control.get('newPassword')?.value;
+      const confirmNewPassword = control.get('confirmNewPassword')?.value;
 
-      if (password === confirmPassword) {
+      if (newPassword === confirmNewPassword) {
         return null;
       }
       return { passwordMismatch: true };
     };
   }
 
-  protected onSubmit(): void {
+  protected onSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const register = this.form.getRawValue();
-
-    console.log(register);
+    const credentials = this.form.getRawValue();
+    console.log(credentials);
   }
 }
