@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import {
   Validators,
   ReactiveFormsModule,
@@ -27,6 +27,7 @@ export class Register {
       validators: this.passwordMatchValidator(),
     },
   );
+  protected readonly isLoading = signal(false);
 
   private passwordMatchValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -40,13 +41,20 @@ export class Register {
     };
   }
 
-  protected onSubmit(): void {
+  sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  protected async onSubmit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const register = this.form.getRawValue();
+    this.isLoading.set(true);
 
+    const register = this.form.getRawValue();
     console.log(register);
+
+    await this.sleep(5000);
+
+    this.isLoading.set(false);
   }
 }
