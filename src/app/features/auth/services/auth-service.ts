@@ -10,7 +10,7 @@ import { ResetPasswordRequest } from '../models/requests/reset-password-request'
 @Service()
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8080/api/auth';
+  private readonly apiUrl = 'http://localhost:3001/api/auth';
 
   public register(request: RegisterRequest): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/register`, request);

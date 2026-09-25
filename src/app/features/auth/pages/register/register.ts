@@ -7,6 +7,10 @@ import {
   ValidatorFn,
   NonNullableFormBuilder,
 } from '@angular/forms';
+import { AuthService } from '../../services/auth-service';
+import { RegisterRequest } from '../../models/requests/register-request';
+import { finalize } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -15,7 +19,9 @@ import {
   templateUrl: './register.html',
 })
 export class Register {
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
+  protected readonly isLoading = signal(false);
   protected readonly form = this.fb.group(
     {
       fullName: ['', [Validators.required]],
@@ -27,7 +33,6 @@ export class Register {
       validators: this.passwordMatchValidator(),
     },
   );
-  protected readonly isLoading = signal(false);
 
   private passwordMatchValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -41,20 +46,32 @@ export class Register {
     };
   }
 
-  sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  protected async onSubmit(): Promise<void> {
+  protected onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+
+    const formValues = this.form.getRawValue();
+    const request: RegisterRequest = {
+      fullName: formValues.fullName,
+      email: formValues.email,
+      password: formValues.password,
+    };
+
     this.isLoading.set(true);
 
-    const register = this.form.getRawValue();
-    console.log(register);
-
-    await this.sleep(5000);
-
-    this.isLoading.set(false);
+    this.authService
+      .register(request)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: () => {
+          console.log('Registered');
+        },
+        error: (error: HttpErrorResponse) => {
+          console.log(error.status);
+          console.log(error.error);
+        },
+      });
   }
 }

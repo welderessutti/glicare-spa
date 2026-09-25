@@ -3,6 +3,7 @@ import { Validators, ReactiveFormsModule, NonNullableFormBuilder } from '@angula
 import { AuthService } from '../../services/auth-service';
 import { LoginRequest } from '../../models/requests/login-request';
 import { finalize } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -40,10 +41,10 @@ export class Login {
         next: (response) => {
           console.log(response);
         },
-        error: (error) => {
-          console.log(error);
+        error: (error: HttpErrorResponse) => {
+          console.log(error.status);
+          console.log(error.error);
         },
-        complete: () => console.log('Done!'),
       });
   }
 }
