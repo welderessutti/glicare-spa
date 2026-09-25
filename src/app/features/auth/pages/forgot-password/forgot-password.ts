@@ -1,5 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { Validators, ReactiveFormsModule, NonNullableFormBuilder } from '@angular/forms';
+import { ForgotPasswordRequest } from '../../models/requests/forgot-password-request';
+import { AuthService } from '../../services/auth-service';
+import { finalize } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -8,26 +12,36 @@ import { Validators, ReactiveFormsModule, NonNullableFormBuilder } from '@angula
   templateUrl: './forgot-password.html',
 })
 export class ForgotPassword {
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
   });
   protected readonly isLoading = signal(false);
 
-  sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  protected async onSubmit(): Promise<void> {
+  protected onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    this.isLoading.set(true);
 
     const email = this.form.getRawValue();
-    console.log(email);
+    const request: ForgotPasswordRequest = {
+      email: email.email,
+    };
 
-    await this.sleep(5000);
+    this.isLoading.set(true);
 
-    this.isLoading.set(false);
+    this.authService
+      .forgotPassword(request)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (response) => {
+          console.log(response);
+        },
+        error: (error: HttpErrorResponse) => {
+          console.log(error);
+        },
+      });
   }
 }

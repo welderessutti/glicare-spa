@@ -7,6 +7,10 @@ import {
   ValidationErrors,
   NonNullableFormBuilder,
 } from '@angular/forms';
+import { AuthService } from '../../services/auth-service';
+import { ResetPasswordRequest } from '../../models/requests/reset-password-request';
+import { finalize } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -15,6 +19,7 @@ import {
   templateUrl: './reset-password.html',
 })
 export class ResetPassword {
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group(
     {
@@ -39,20 +44,29 @@ export class ResetPassword {
     };
   }
 
-  sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  protected async onSubmit(): Promise<void> {
+  protected onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+
+    const password = this.form.getRawValue();
+    const request: ResetPasswordRequest = {
+      password: password.newPassword,
+    };
+
     this.isLoading.set(true);
 
-    const credentials = this.form.getRawValue();
-    console.log(credentials);
-
-    await this.sleep(5000);
-
-    this.isLoading.set(false);
+    this.authService
+      .resetPassword(request)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (response) => {
+          console.log(response);
+        },
+        error: (error: HttpErrorResponse) => {
+          console.log(error);
+        },
+      });
   }
 }

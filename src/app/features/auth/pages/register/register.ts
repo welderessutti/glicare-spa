@@ -21,7 +21,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class Register {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
-  protected readonly isLoading = signal(false);
   protected readonly form = this.fb.group(
     {
       fullName: ['', [Validators.required]],
@@ -33,6 +32,7 @@ export class Register {
       validators: this.passwordMatchValidator(),
     },
   );
+  protected readonly isLoading = signal(false);
 
   private passwordMatchValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {

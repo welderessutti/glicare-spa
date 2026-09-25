@@ -14,11 +14,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class Login {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
-  protected readonly isLoading = signal(false);
   protected readonly form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
   });
+  protected readonly isLoading = signal(false);
 
   protected onSubmit(): void {
     if (this.form.invalid) {
