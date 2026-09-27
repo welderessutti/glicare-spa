@@ -4,6 +4,7 @@ import { AuthService } from '../../services/auth-service';
 import { LoginRequest } from '../../models/requests/login-request';
 import { finalize } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -13,6 +14,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class Login {
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -54,7 +56,7 @@ export class Login {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
-          console.log(response);
+          this.router.navigate(['/dashboard']);
         },
         error: (error: HttpErrorResponse) => {
           this.handleLoginError(error);

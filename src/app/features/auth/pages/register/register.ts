@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth-service';
 import { RegisterRequest } from '../../models/requests/register-request';
 import { finalize } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -20,6 +21,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class Register {
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group(
     {
@@ -81,7 +83,7 @@ export class Register {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
-          console.log('Registered');
+          this.router.navigate(['/auth/check-email']);
         },
         error: (error: HttpErrorResponse) => {
           this.handleRegisterError(error);

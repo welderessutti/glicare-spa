@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth-service';
 import { ResetPasswordRequest } from '../../models/requests/reset-password-request';
 import { finalize } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -20,6 +21,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class ResetPassword {
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group(
     {
@@ -80,7 +82,7 @@ export class ResetPassword {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
-          console.log(response);
+          this.router.navigate(['/auth/login'], { queryParams: { passwordReset: true } });
         },
         error: (error: HttpErrorResponse) => {
           this.handleResetPasswordError(error);
