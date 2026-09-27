@@ -18,6 +18,8 @@ export class ForgotPassword {
     email: ['', [Validators.required, Validators.email]],
   });
   protected readonly isLoading = signal(false);
+  protected readonly successMessage = signal<string | null>(null);
+  protected readonly errorMessage = signal<string | null>(null);
 
   protected onSubmit(): void {
     if (this.form.invalid) {
@@ -37,10 +39,16 @@ export class ForgotPassword {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
-          console.log(response);
+          this.successMessage.set(
+            'If an account exists for this email, recovery instructions have been sent.',
+          );
         },
         error: (error: HttpErrorResponse) => {
-          console.log(error);
+          if (error.status === 429) {
+            this.errorMessage.set('Too many requests. Please try again later.');
+            return;
+          }
+          this.errorMessage.set('Unable to process your request right now.');
         },
       });
   }

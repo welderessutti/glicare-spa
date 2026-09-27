@@ -31,6 +31,23 @@ export class ResetPassword {
     },
   );
   protected readonly isLoading = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
+
+  private handleResetPasswordError(error: HttpErrorResponse): void {
+    switch (error.status) {
+      case 400:
+        this.errorMessage.set('The password reset link is invalid.');
+        break;
+      case 410:
+        this.errorMessage.set('This password reset link has expired.');
+        break;
+      case 429:
+        this.errorMessage.set('Too many attempts. Please try again later.');
+        break;
+      default:
+        this.errorMessage.set('Unable to reset your password right now.');
+    }
+  }
 
   private passwordMatchValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -65,7 +82,7 @@ export class ResetPassword {
           console.log(response);
         },
         error: (error: HttpErrorResponse) => {
-          console.log(error);
+          this.handleResetPasswordError(error);
         },
       });
   }

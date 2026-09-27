@@ -19,6 +19,20 @@ export class Login {
     password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
   });
   protected readonly isLoading = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
+
+  private handleLoginError(error: HttpErrorResponse): void {
+    switch (error.status) {
+      case 401:
+        this.errorMessage.set('Invalid email or password');
+        break;
+      case 429:
+        this.errorMessage.set('Too many login attempts. Please try again later.');
+        break;
+      default:
+        this.errorMessage.set('Unable to sign in right now. Please try again.');
+    }
+  }
 
   protected onSubmit(): void {
     if (this.form.invalid) {
@@ -42,8 +56,7 @@ export class Login {
           console.log(response);
         },
         error: (error: HttpErrorResponse) => {
-          console.log(error.status);
-          console.log(error.error);
+          this.handleLoginError(error);
         },
       });
   }

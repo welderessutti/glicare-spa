@@ -33,6 +33,20 @@ export class Register {
     },
   );
   protected readonly isLoading = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
+
+  private handleRegisterError(error: HttpErrorResponse): void {
+    switch (error.status) {
+      case 409:
+        this.errorMessage.set('An account with this email already exists.');
+        break;
+      case 429:
+        this.errorMessage.set('Too many attempts. Please try again later.');
+        break;
+      default:
+        this.errorMessage.set('Unable to create your account right now.');
+    }
+  }
 
   private passwordMatchValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -69,8 +83,7 @@ export class Register {
           console.log('Registered');
         },
         error: (error: HttpErrorResponse) => {
-          console.log(error.status);
-          console.log(error.error);
+          this.handleRegisterError(error);
         },
       });
   }

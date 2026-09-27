@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 
+type VerificationStatus =
+  'loading' | 'success' | 'invalid' | 'expired' | 'already-verified' | 'error';
+
 @Component({
   imports: [],
   selector: 'app-verify-email',
