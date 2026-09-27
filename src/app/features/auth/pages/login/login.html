@@ -45,6 +45,12 @@
     }
   </div>
 
+  @if (errorMessage()) {
+    <div role="alert" class="rounded-md border px-3 py-2 text-sm">
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
   <button
     type="submit"
     [disabled]="isLoading()"
