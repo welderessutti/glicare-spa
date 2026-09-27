@@ -46,6 +46,7 @@ export class Login {
       password: formValues.password,
     };
 
+    this.errorMessage.set(null);
     this.isLoading.set(true);
 
     this.authService

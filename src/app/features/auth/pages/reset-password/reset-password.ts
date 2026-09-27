@@ -72,6 +72,7 @@ export class ResetPassword {
       password: password.newPassword,
     };
 
+    this.errorMessage.set(null);
     this.isLoading.set(true);
 
     this.authService

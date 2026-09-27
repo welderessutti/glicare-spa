@@ -32,6 +32,7 @@ export class ForgotPassword {
       email: email.email,
     };
 
+    this.errorMessage.set(null);
     this.isLoading.set(true);
 
     this.authService

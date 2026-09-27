@@ -73,6 +73,7 @@ export class Register {
       password: formValues.password,
     };
 
+    this.errorMessage.set(null);
     this.isLoading.set(true);
 
     this.authService
