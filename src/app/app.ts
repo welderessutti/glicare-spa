@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { AuthService } from './features/auth/services/auth-service';
 
 @Component({
   imports: [RouterOutlet],
@@ -8,5 +9,8 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './app.html',
 })
 export class App {
-  protected readonly title = signal('glicare-spa');
+  private readonly authService = inject(AuthService);
+  constructor() {
+    this.authService.restoreSession();
+  }
 }
