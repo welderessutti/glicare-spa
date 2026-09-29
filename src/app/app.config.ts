@@ -9,10 +9,11 @@ import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { httpErrorInterceptor } from './core/interceptors/http-error-interceptor';
 import { SessionService } from './core/services/session/session-service';
+import { authInterceptor } from './features/auth/interceptors/auth-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideHttpClient(withInterceptors([httpErrorInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
     provideAppInitializer(() => {
       return inject(SessionService).restoreSession();
     }),
