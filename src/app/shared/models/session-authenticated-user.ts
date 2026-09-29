@@ -1,4 +1,4 @@
-export interface AuthenticatedUser {
+export interface SessionAuthenticatedUser {
   id: string;
   fullName: string;
   email: string;

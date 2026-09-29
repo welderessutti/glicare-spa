@@ -5,6 +5,7 @@ import { LoginRequest } from '../../models/requests/login-request';
 import { finalize } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { SessionService } from '../../../../core/services/session/session-service';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -14,6 +15,7 @@ import { Router } from '@angular/router';
 })
 export class Login {
   private readonly authService = inject(AuthService);
+  private readonly sessionService = inject(SessionService);
   private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group({
@@ -55,7 +57,8 @@ export class Login {
       .login(request)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (response) => {
+        next: (user) => {
+          this.sessionService.startSession(user);
           this.router.navigate(['/dashboard']);
         },
         error: (error: HttpErrorResponse) => {

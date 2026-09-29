@@ -1,1 +1,16 @@
 <p>app-layout works!</p>
+<button
+  (click)="onSubmit()"
+  type="submit"
+  [disabled]="isLoading()"
+  [class.opacity-75]="isLoading()"
+  [class.opacity-100]="!isLoading()"
+  [class.cursor-pointer]="!isLoading()"
+  class="flex gap-3 justify-center items-center p-2 bg-gray-700 text-white"
+>
+  @if (isLoading()) {
+    <span>Loading...</span>
+  } @else {
+    <span>Logout</span>
+  }
+</button>
