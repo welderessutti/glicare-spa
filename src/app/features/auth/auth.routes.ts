@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { guestGuard } from '../../core/guards/guest/guest-guard';
 
 export const AUTH_ROUTES: Routes = [
   {
@@ -12,16 +13,19 @@ export const AUTH_ROUTES: Routes = [
       },
       {
         path: 'login',
+        canActivate: [guestGuard],
         title: 'Sign In | Glicare',
         loadComponent: () => import('./pages/login/login').then((m) => m.Login),
       },
       {
         path: 'register',
+        canActivate: [guestGuard],
         title: 'Create account | Glicare',
         loadComponent: () => import('./pages/register/register').then((m) => m.Register),
       },
       {
         path: 'forgot-password',
+        canActivate: [guestGuard],
         title: 'Forgot password | Glicare',
         loadComponent: () =>
           import('./pages/forgot-password/forgot-password').then((m) => m.ForgotPassword),
