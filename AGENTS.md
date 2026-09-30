@@ -92,6 +92,8 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 
 ## UI and Responsive Design
 
+- Prefer semantic HTML elements (`header`, `nav`, `main`, `section`, `article`, `aside`, `footer`, `button`, etc.) when they correctly express the purpose of the content or interaction.
+- Use `div` for generic layout or grouping containers that have no semantic meaning.
 - Build user interfaces mobile-first.
 - Start with the smallest viewport and progressively enhance layouts for larger breakpoints.
 - Do not build desktop-first layouts and retrofit mobile behavior afterward.
