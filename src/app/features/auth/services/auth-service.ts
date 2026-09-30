@@ -5,8 +5,8 @@ import { RegisterRequest } from '../models/requests/register-request';
 import { LoginRequest } from '../models/requests/login-request';
 import { ForgotPasswordRequest } from '../models/requests/forgot-password-request';
 import { ResetPasswordRequest } from '../models/requests/reset-password-request';
-import { API_URL } from '../../../shared/api-url';
-import { SessionAuthenticatedUser } from '../../../shared/models/session-authenticated-user';
+import { API_URL } from '../../../core/config/api-url';
+import { SessionAuthenticatedUser } from '../../../core/models/session-authenticated-user';
 
 @Service()
 export class AuthService {

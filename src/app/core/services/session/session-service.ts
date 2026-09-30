@@ -1,8 +1,8 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
-import { SessionAuthenticatedUser } from '../../../shared/models/session-authenticated-user';
+import { SessionAuthenticatedUser } from '../../models/session-authenticated-user';
 import { HttpClient } from '@angular/common/http';
-import { API_URL } from '../../../shared/api-url';
+import { API_URL } from '../../config/api-url';
 import { SessionStatus } from '../../models/session-status';
 
 @Service()
