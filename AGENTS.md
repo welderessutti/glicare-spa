@@ -16,6 +16,10 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
 - Use `NgOptimizedImage` for all static images.
   - `NgOptimizedImage` does not work for inline base64 images.
+- Prefer patterns, APIs, imports, examples, and implementation approaches documented in the official Angular documentation.
+- When multiple valid approaches exist, prefer the one recommended for the project's current Angular version.
+- Do not rely on outdated Angular patterns, deprecated APIs, or third-party conventions when an official Angular solution exists.
+- For newly introduced Angular features, verify usage against the current official Angular documentation before implementation.
 
 ## Accessibility Requirements
 
