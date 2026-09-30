@@ -57,3 +57,72 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use the `providedIn: 'root'` option for singleton services
 - Prefer the `@Service` decorator over `@Injectable({providedIn: 'root'})` for new singleton services (Angular v22+)
 - Use the `inject()` function instead of constructor injection
+
+## Project Architecture
+
+- Organize application code by domain and feature.
+- Keep feature-specific UI, models, services, and behavior inside their corresponding feature.
+- Use `core` only for application-wide infrastructure, singleton services, guards, interceptors, layouts, and other global concerns.
+- Use `shared` only for genuinely reusable and domain-independent UI, utilities, and models.
+- Do not use `core` or `shared` as dumping grounds for code without a clear architectural owner.
+- Keep clear boundaries between features, application-wide infrastructure, and reusable UI.
+- Avoid coupling one feature to implementation details of another feature.
+- Keep business and domain logic independent from UI and infrastructure details when practical.
+- Introduce additional architectural layers only when they solve a real current problem.
+
+## Code Quality and Design
+
+- Follow SOLID and Clean Code principles pragmatically rather than mechanically.
+- Prefer simple, explicit, readable code over clever or unnecessarily abstract solutions.
+- Keep functions, components, and services focused on one coherent responsibility.
+- Use descriptive names that communicate intent.
+- Prefer composition over inheritance.
+- Avoid premature abstraction and speculative generalization.
+- Extract reusable abstractions when there is a meaningful reusable concept, not merely to remove every instance of duplication.
+- Do not create interfaces, wrappers, services, or architectural layers without a concrete reason.
+- Comments should explain why something exists when the reason is not obvious; do not restate what the code already expresses clearly.
+- Prefer the simplest architecture that satisfies the current requirement while preserving reasonable extensibility.
+
+## Dependencies
+
+- Prefer Angular, TypeScript, browser APIs, Tailwind CSS, and dependencies already present in the project.
+- Do not add third-party dependencies unless they provide clear value that cannot reasonably be achieved with the existing stack.
+- Consider maintenance, bundle size, security, compatibility, and long-term support before introducing a dependency.
+- Do not add, remove, or replace dependencies without explicit approval.
+
+## UI and Responsive Design
+
+- Build user interfaces mobile-first.
+- Start with the smallest viewport and progressively enhance layouts for larger breakpoints.
+- Do not build desktop-first layouts and retrofit mobile behavior afterward.
+- Use Tailwind CSS utilities following the project's existing conventions.
+- Prefer Tailwind utilities over custom CSS when Tailwind provides a clear and maintainable equivalent.
+- Keep responsive behavior, accessibility, and touch interaction in mind when designing UI.
+
+## Security
+
+- Treat frontend authentication and authorization controls as UX/navigation mechanisms, never as security boundaries.
+- Never store authentication tokens in `localStorage` or `sessionStorage`.
+- Do not expose authentication tokens or other sensitive authentication data to client-side JavaScript.
+- Preserve the existing HttpOnly cookie-based authentication and session architecture unless explicitly instructed otherwise.
+- Do not weaken existing authentication, session, or security behavior without explicit approval.
+- Never expose sensitive, internal, or technical error information directly to users.
+
+## Scope and Change Control
+
+- Modify only files necessary for the requested task.
+- Do not refactor unrelated code while implementing a task.
+- Preserve existing architecture, naming conventions, and established patterns unless the task explicitly requires changing them.
+- If a broader refactor or architectural change appears beneficial, explain it instead of performing it automatically.
+- Do not introduce functionality for hypothetical future requirements unless explicitly requested.
+
+## Validation
+
+Before considering an implementation complete:
+
+- Ensure TypeScript compilation succeeds.
+- Run the Angular build and ensure the change does not introduce build errors.
+- Run relevant tests when they exist or when the change affects tested behavior.
+- Do not leave errors or warnings introduced by the implementation.
+- For UI changes, verify responsive behavior and accessibility requirements.
+- Review the final change for unnecessary complexity, unrelated modifications, and unused code.
