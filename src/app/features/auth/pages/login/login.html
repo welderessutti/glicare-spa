@@ -1,22 +1,20 @@
-<form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col bg-gray-300">
+<form [formRoot]="loginForm" class="flex flex-col bg-gray-300">
   <div class="flex flex-col mb-2">
     <label for="email"> email </label>
 
     <input
+      [formField]="loginForm.email"
       id="email"
       type="email"
-      formControlName="email"
       autocomplete="email"
       placeholder="your@email.com"
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.email.touched && form.controls.email.hasError('required')) {
-      <span> E-mail is mandatory </span>
-    }
-
-    @if (form.controls.email.touched && form.controls.email.hasError('email')) {
-      <span> Inform a valid e-mail </span>
+    @if (loginForm.email().touched() && loginForm.email().invalid()) {
+      @for (error of loginForm.email().errors(); track error.kind) {
+        <span>{{ error.message }}</span>
+      }
     }
   </div>
 
@@ -24,24 +22,17 @@
     <label for="password"> password </label>
 
     <input
+      [formField]="loginForm.password"
       id="password"
       type="password"
-      formControlName="password"
       autocomplete="current-password"
       placeholder="******"
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.password.touched && form.controls.password.hasError('required')) {
-      <span> Password is mandatory </span>
-    }
-
-    @if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
-      <span> Password must contain at least 8 characters </span>
-    }
-
-    @if (form.controls.password.touched && form.controls.password.hasError('maxlength')) {
-      <span> Password has a 64 character limit </span>
+    @if (loginForm.password().touched() && loginForm.password().invalid()) {}
+    @for (error of loginForm.password().errors(); track error.kind) {
+      <span>{{ error.message }}</span>
     }
   </div>
 
@@ -53,13 +44,13 @@
 
   <button
     type="submit"
-    [disabled]="isLoading()"
-    [class.opacity-75]="isLoading()"
-    [class.opacity-100]="!isLoading()"
-    [class.cursor-pointer]="!isLoading()"
+    [disabled]="loginForm().submitting()"
+    [class.opacity-75]="loginForm().submitting()"
+    [class.opacity-100]="!loginForm().submitting()"
+    [class.cursor-pointer]="!loginForm().submitting()"
     class="flex gap-3 justify-center items-center p-2 bg-gray-700 text-white"
   >
-    @if (isLoading()) {
+    @if (loginForm().submitting()) {
       <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle
           class="opacity-25"

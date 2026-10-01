@@ -1,14 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
-import { Validators, ReactiveFormsModule, NonNullableFormBuilder } from '@angular/forms';
 import { AuthService } from '../../services/auth-service';
 import { LoginRequest } from '../../models/requests/login-request';
-import { finalize } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { SessionService } from '../../../../core/services/session/session-service';
+import { email, form, required, FormRoot, FormField } from '@angular/forms/signals';
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [FormRoot, FormField],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',
@@ -17,14 +17,8 @@ export class Login {
   private readonly authService = inject(AuthService);
   private readonly sessionService = inject(SessionService);
   private readonly router = inject(Router);
-  private readonly fb = inject(NonNullableFormBuilder);
-  protected readonly form = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
-  });
-  protected readonly isLoading = signal(false);
+  private readonly loginModel = signal<LoginRequest>({ email: '', password: '' });
   protected readonly errorMessage = signal<string | null>(null);
-
   private handleLoginError(error: HttpErrorResponse): void {
     switch (error.status) {
       case 401:
@@ -38,32 +32,31 @@ export class Login {
     }
   }
 
-  protected onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    const formValues = this.form.getRawValue();
-    const request: LoginRequest = {
-      email: formValues.email,
-      password: formValues.password,
-    };
-
-    this.errorMessage.set(null);
-    this.isLoading.set(true);
-
-    this.authService
-      .login(request)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: (user) => {
-          this.sessionService.startSession(user);
-          this.router.navigate(['/dashboard']);
+  protected readonly loginForm = form(
+    this.loginModel,
+    (schemaPath) => {
+      required(schemaPath.email, { message: 'E-mail is required' });
+      email(schemaPath.email, { message: 'Enter a valid email' });
+      required(schemaPath.password, { message: 'Password is required' });
+    },
+    {
+      submission: {
+        action: async (field) => {
+          this.errorMessage.set(null);
+          try {
+            const authenticatedUser = await firstValueFrom(this.authService.login(field().value()));
+            this.sessionService.startSession(authenticatedUser);
+            await this.router.navigate(['/dashboard']);
+          } catch (error) {
+            const httpError = error as HttpErrorResponse;
+            this.handleLoginError(httpError);
+          }
         },
-        error: (error: HttpErrorResponse) => {
-          this.handleLoginError(error);
+        onInvalid: (field) => {
+          const firstError = field().errorSummary()[0];
+          firstError?.fieldTree().focusBoundControl();
         },
-      });
-  }
+      },
+    },
+  );
 }
