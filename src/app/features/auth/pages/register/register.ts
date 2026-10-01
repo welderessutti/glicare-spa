@@ -1,20 +1,22 @@
 import { Component, inject, signal } from '@angular/core';
-import {
-  Validators,
-  ReactiveFormsModule,
-  AbstractControl,
-  ValidationErrors,
-  ValidatorFn,
-  NonNullableFormBuilder,
-} from '@angular/forms';
 import { AuthService } from '../../services/auth-service';
 import { RegisterRequest } from '../../models/requests/register-request';
-import { finalize } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import {
+  email,
+  form,
+  FormField,
+  FormRoot,
+  maxLength,
+  minLength,
+  required,
+  validate,
+} from '@angular/forms/signals';
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [FormRoot, FormField],
   selector: 'app-register',
   styleUrl: './register.css',
   templateUrl: './register.html',
@@ -22,21 +24,13 @@ import { Router } from '@angular/router';
 export class Register {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly fb = inject(NonNullableFormBuilder);
-  protected readonly form = this.fb.group(
-    {
-      fullName: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
-      confirmPassword: ['', [Validators.required]],
-    },
-    {
-      validators: this.passwordMatchValidator(),
-    },
-  );
-  protected readonly isLoading = signal(false);
+  private readonly registerModel = signal<RegisterRequest>({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
   protected readonly errorMessage = signal<string | null>(null);
-
   private handleRegisterError(error: HttpErrorResponse): void {
     switch (error.status) {
       case 409:
@@ -50,44 +44,47 @@ export class Register {
     }
   }
 
-  private passwordMatchValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const password = control.get('password')?.value;
-      const confirmPassword = control.get('confirmPassword')?.value;
-
-      if (password === confirmPassword) {
+  protected readonly registerForm = form(
+    this.registerModel,
+    (schemaPath) => {
+      required(schemaPath.fullName, { message: 'Full name is required' });
+      required(schemaPath.email, { message: 'Email is required' });
+      email(schemaPath.email, { message: 'Enter a valid email' });
+      required(schemaPath.password, { message: 'Password is required' });
+      minLength(schemaPath.password, 8, { message: 'Password must contain at least 8 characters' });
+      maxLength(schemaPath.password, 64, { message: 'Password has a 64 character limit' });
+      required(schemaPath.confirmPassword, { message: 'Confirm password is required' });
+      validate(schemaPath.confirmPassword, ({ value, valueOf, stateOf }) => {
+        if (!stateOf(schemaPath.password).touched()) {
+          return null;
+        }
+        if (value() !== valueOf(schemaPath.password)) {
+          return {
+            kind: 'passwordMismatch',
+            message: "Passwords don't match",
+          };
+        }
         return null;
-      }
-      return { passwordMismatch: true };
-    };
-  }
-
-  protected onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    const formValues = this.form.getRawValue();
-    const request: RegisterRequest = {
-      fullName: formValues.fullName,
-      email: formValues.email,
-      password: formValues.password,
-    };
-
-    this.errorMessage.set(null);
-    this.isLoading.set(true);
-
-    this.authService
-      .register(request)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: () => {
-          this.router.navigate(['/auth/check-email']);
-        },
-        error: (error: HttpErrorResponse) => {
-          this.handleRegisterError(error);
-        },
       });
-  }
+    },
+    {
+      submission: {
+        action: async (field) => {
+          this.errorMessage.set(null);
+
+          try {
+            await firstValueFrom(this.authService.register(field().value()));
+            await this.router.navigate(['/auth/check-email']);
+          } catch (error) {
+            const httpError = error as HttpErrorResponse;
+            this.handleRegisterError(httpError);
+          }
+        },
+        onInvalid: (field) => {
+          const firstError = field().errorSummary()[0];
+          firstError?.fieldTree().focusBoundControl();
+        },
+      },
+    },
+  );
 }

@@ -43,6 +43,7 @@ export class Login {
       submission: {
         action: async (field) => {
           this.errorMessage.set(null);
+
           try {
             const authenticatedUser = await firstValueFrom(this.authService.login(field().value()));
             this.sessionService.startSession(authenticatedUser);

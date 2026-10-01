@@ -1,82 +1,72 @@
-<form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col bg-gray-300">
+<form [formRoot]="registerForm" class="flex flex-col bg-gray-300">
   <div class="flex flex-col mb-2">
     <label for="fullName">Full name</label>
     <input
+      [formField]="registerForm.fullName"
       id="fullName"
-      formControlName="fullName"
       autocomplete="name"
       placeholder="Your Full Name"
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.fullName.touched && form.controls.fullName.hasError('required')) {
-      <span>Full name is mandatory</span>
+    @if (registerForm.fullName().touched() && registerForm.fullName().invalid()) {
+      @for (error of registerForm.fullName().errors(); track error.kind) {
+        <span>{{ error.message }}</span>
+      }
     }
   </div>
 
   <div class="flex flex-col mb-2">
     <label for="email">Email</label>
     <input
+      [formField]="registerForm.email"
       id="email"
       type="email"
-      formControlName="email"
       autocomplete="email"
       placeholder="your@email.com"
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.email.touched && form.controls.email.hasError('required')) {
-      <span> E-mail is mandatory </span>
-    }
-
-    @if (form.controls.email.touched && form.controls.email.hasError('email')) {
-      <span> Inform a valid e-mail </span>
+    @if (registerForm.email().touched() && registerForm.email().invalid()) {
+      @for (error of registerForm.email().errors(); track error.kind) {
+        <span>{{ error.message }}</span>
+      }
     }
   </div>
 
   <div class="flex flex-col mb-2">
     <label for="password">Password</label>
     <input
+      [formField]="registerForm.password"
       id="password"
       type="password"
-      formControlName="password"
       autocomplete="new-password"
       placeholder="******"
       class="bg-white placeholder-gray-300"
     />
 
-    @if (form.controls.password.touched && form.controls.password.hasError('required')) {
-      <span> Password is mandatory </span>
-    }
-
-    @if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
-      <span> Password must contain at least 8 characters </span>
-    }
-
-    @if (form.controls.password.touched && form.controls.password.hasError('maxlength')) {
-      <span> Password has a 64 character limit </span>
+    @if (registerForm.password().touched() && registerForm.password().invalid()) {
+      @for (error of registerForm.password().errors(); track error.kind) {
+        <span>{{ error.message }}</span>
+      }
     }
   </div>
 
   <div class="flex flex-col mb-2">
     <label for="confirmPassword">Confirm password</label>
     <input
+      [formField]="registerForm.confirmPassword"
       id="confirmPassword"
       type="password"
-      formControlName="confirmPassword"
       autocomplete="new-password"
       placeholder="******"
       class="bg-white placeholder-gray-300"
     />
 
-    @if (
-      form.controls.confirmPassword.touched && form.controls.confirmPassword.hasError('required')
-    ) {
-      <span> Password confirmation is mandatory </span>
-    }
-
-    @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
-      <span>Passwords don't match</span>
+    @if (registerForm.confirmPassword().touched() && registerForm.confirmPassword().invalid()) {
+      @for (error of registerForm.confirmPassword().errors(); track error.kind) {
+        <span>{{ error.message }}</span>
+      }
     }
   </div>
 
@@ -88,13 +78,13 @@
 
   <button
     type="submit"
-    [disabled]="isLoading()"
-    [class.opacity-75]="isLoading()"
-    [class.opacity-100]="!isLoading()"
-    [class.cursor-pointer]="!isLoading()"
+    [disabled]="registerForm().submitting()"
+    [class.opacity-75]="registerForm().submitting()"
+    [class.opacity-100]="!registerForm().submitting()"
+    [class.cursor-pointer]="!registerForm().submitting()"
     class="flex gap-3 justify-center items-center p-2 bg-gray-700 text-white"
   >
-    @if (isLoading()) {
+    @if (registerForm().submitting()) {
       <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle
           class="opacity-25"
