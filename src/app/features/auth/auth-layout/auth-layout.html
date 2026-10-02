@@ -1,15 +1,28 @@
-<main class="flex flex-col min-h-dvh">
-  <div class="flex flex-1 container-padding items-center bg-gray-200">
-    <section>
-      <div class="flex justify-center mb-2">
-        <h1>Glicare</h1>
-      </div>
+<main
+  class="grid min-h-dvh bg-background lg:h-dvh lg:max-h-dvh lg:grid-cols-[minmax(28rem,2fr)_minmax(0,3fr)] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden 2xl:grid-cols-[minmax(28rem,1fr)_minmax(0,2fr)]"
+>
+  <div
+    class="flex min-h-0 min-w-0 max-w-full flex-col px-4 py-8 sm:px-6 sm:py-12 lg:max-h-full lg:overflow-y-auto lg:px-8"
+  >
+    <div class="mx-auto my-auto w-full max-w-md shrink-0">
+      <header class="mb-8 text-center">
+        <p class="text-3xl font-bold tracking-tight text-accent">Glicare</p>
+      </header>
 
       <router-outlet />
-    </section>
+    </div>
+  </div>
 
-    <section class="hidden lg:inline">
-      <span>I'm here!</span>
-    </section>
+  <div
+    aria-hidden="true"
+    class="relative hidden min-h-0 min-w-0 max-w-full overflow-hidden bg-surface lg:block lg:max-h-full"
+  >
+    <img
+      ngSrc="/images/glicare-cover-image.webp"
+      alt=""
+      fill
+      priority
+      class="object-contain object-center"
+    />
   </div>
 </main>

@@ -1,83 +1,157 @@
-<form [formRoot]="loginForm" class="flex flex-col bg-gray-300 p-2">
-  <div class="flex flex-col mb-2">
-    <label for="email" class="text-xs self-start"> email </label>
+<section
+  aria-labelledby="login-title"
+  class="rounded-2xl border border-border bg-surface-raised px-5 py-6 sm:p-8"
+>
+  <header>
+    <h1 id="login-title" class="text-2xl font-semibold tracking-tight text-text-primary">
+      Welcome back
+    </h1>
+    <p id="login-description" class="mt-2 text-base text-text-secondary">
+      Sign in to your Glicare account.
+    </p>
+  </header>
 
-    <input
-      [formField]="loginForm.email"
-      id="email"
-      type="email"
-      autocomplete="email"
-      placeholder="your@email.com"
-      class="bg-white placeholder-gray-300"
-    />
-
-    @if (loginForm.email().touched() && loginForm.email().invalid()) {
-      @for (error of loginForm.email().errors(); track error.kind) {
-        <span class="text-xs text-error self-end">{{ error.message }}</span>
-      }
-    }
-  </div>
-
-  <div class="flex flex-col mb-2">
-    <div class="flex justify-between">
-      <label for="password" class="text-xs"> password </label>
-      <a
-        [routerLink]="['/auth/forgot-password']"
-        target="_self"
-        class="text-xs text-blue-500 underline"
-        >Forgot password</a
-      >
-    </div>
-    <input
-      [formField]="loginForm.password"
-      id="password"
-      type="password"
-      autocomplete="current-password"
-      placeholder="******"
-      class="bg-white placeholder-gray-300"
-    />
-
-    @if (loginForm.password().touched() && loginForm.password().invalid()) {
-      @for (error of loginForm.password().errors(); track error.kind) {
-        <span class="text-xs text-error self-end">{{ error.message }}</span>
-      }
-    }
-  </div>
-
-  @if (errorMessage()) {
-    <div role="alert" class="rounded-md border px-3 py-2 text-sm">
-      <span>{{ errorMessage() }}</span>
-    </div>
+  @if (passwordReset()) {
+    <p
+      role="status"
+      class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+    >
+      Your password has been updated. Sign in with your new password.
+    </p>
   }
 
-  <button
-    type="submit"
-    [disabled]="loginForm().submitting()"
-    [class.opacity-75]="loginForm().submitting()"
-    [class.opacity-100]="!loginForm().submitting()"
-    [class.cursor-pointer]="!loginForm().submitting()"
-    class="flex gap-3 justify-center items-center p-2 bg-gray-700 text-white"
+  <form
+    [formRoot]="loginForm"
+    aria-labelledby="login-title"
+    aria-describedby="login-description"
+    [attr.aria-busy]="loginForm().submitting()"
+    class="mt-6 space-y-5"
   >
-    @if (loginForm().submitting()) {
-      <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        ></circle>
+    <fieldset [disabled]="loginForm().submitting()" class="min-w-0 space-y-5">
+      <legend class="sr-only">Sign-in details</legend>
 
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
-      </svg>
-      <span>Processing…</span>
-    } @else {
-      <span>Sign in</span>
+      <div class="space-y-2">
+        <label for="login-email" class="inline-flex text-sm font-medium text-text-primary"
+          >Email</label
+        >
+        <input
+          [formField]="loginForm.email"
+          id="login-email"
+          type="email"
+          autocomplete="email"
+          autocapitalize="none"
+          [spellcheck]="false"
+          placeholder="you@example.com"
+          [attr.aria-invalid]="emailInvalid()"
+          [attr.aria-describedby]="emailInvalid() ? 'login-email-error' : null"
+          [class.border-error]="emailInvalid()"
+          [class.border-border-strong]="!emailInvalid()"
+          class="min-h-12 w-full rounded-lg border bg-surface-raised px-3 py-3 text-base text-text-primary placeholder:text-text-muted disabled:bg-surface"
+        />
+
+        @if (emailInvalid()) {
+          <ul id="login-email-error" class="space-y-1 text-sm text-error">
+            @for (error of loginForm.email().errors(); track error.kind) {
+              <li>{{ error.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-x-3">
+          <label for="login-password" class="inline-flex text-sm font-medium text-text-primary"
+            >Password</label
+          >
+          <a
+            [routerLink]="['/auth/forgot-password']"
+            class="inline-flex items-center rounded-sm text-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+            >Forgot password?</a
+          >
+        </div>
+
+        <div class="relative">
+          <input
+            [formField]="loginForm.password"
+            id="login-password"
+            [type]="passwordVisible() ? 'text' : 'password'"
+            autocomplete="current-password"
+            [attr.aria-invalid]="passwordInvalid()"
+            [attr.aria-describedby]="passwordInvalid() ? 'login-password-error' : null"
+            [class.border-error]="passwordInvalid()"
+            [class.border-border-strong]="!passwordInvalid()"
+            class="min-h-12 w-full rounded-lg border bg-surface-raised py-3 pr-20 pl-3 text-base text-text-primary disabled:bg-surface"
+          />
+          <button
+            type="button"
+            aria-controls="login-password"
+            [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+            (click)="togglePasswordVisibility()"
+            class="absolute inset-y-1 right-1 min-h-11 min-w-16 cursor-pointer rounded-md px-3 text-sm font-medium text-accent hover:bg-accent-soft hover:text-accent-hover disabled:cursor-wait"
+          >
+            {{ passwordVisible() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+
+        @if (passwordInvalid()) {
+          <ul id="login-password-error" class="space-y-1 text-sm text-error">
+            @for (error of loginForm.password().errors(); track error.kind) {
+              <li>{{ error.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+    </fieldset>
+
+    @if (errorMessage()) {
+      <div
+        role="alert"
+        class="rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
+      >
+        <p class="font-semibold">We couldn't sign you in</p>
+        <p class="mt-1">{{ errorMessage() }}</p>
+      </div>
     }
-  </button>
-</form>
+
+    <button
+      type="submit"
+      [disabled]="loginForm().submitting()"
+      class="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+    >
+      @if (loginForm().submitting()) {
+        <svg
+          class="size-5 animate-spin motion-reduce:animate-none"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
+          <path
+            d="M12 3a9 9 0 0 1 9 9"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        <span>Signing in…</span>
+      } @else {
+        <span>Sign in</span>
+      }
+    </button>
+  </form>
+
+  <p role="status" aria-atomic="true" class="sr-only">
+    @if (loginForm().submitting()) {
+      Signing in. Please wait.
+    }
+  </p>
+
+  <p class="mt-6 flex flex-wrap items-center justify-center gap-x-1 text-sm text-text-secondary">
+    New to Glicare?
+    <a
+      [routerLink]="['/auth/register']"
+      class="inline-flex min-h-11 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+      >Create an account</a
+    >
+  </p>
+</section>

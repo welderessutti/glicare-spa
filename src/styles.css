@@ -16,17 +16,19 @@
   --color-background: #fcfbfb;
   --color-surface: #f6f3f4;
   --color-surface-light: #faf8f9;
+  --color-surface-raised: #ffffff;
   --color-surface-hover: #eee7e9;
 
-  /* Borders */
+  /* Subtle borders separate content; strong borders identify controls. */
   --color-border: #e3dadd;
   --color-border-light: #eee8ea;
+  --color-border-strong: #8a7f83;
 
   /* Text */
   --color-text-primary: #1d1719;
   --color-text-secondary: #4a4043;
   --color-text-tertiary: #706568;
-  --color-text-muted: #93898c;
+  --color-text-muted: #706568;
   --color-text-inverse: #ffffff;
 
   /* Brand */
@@ -41,7 +43,7 @@
   /* States */
   --color-success: #15803d;
   --color-warning: #b45309;
-  --color-error: #fb2c36;
+  --color-error: #b11f2f;
   --color-info: #2563eb;
 
   /* Overlay */
@@ -52,6 +54,16 @@
     'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', 'Noto Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+  body {
+    @apply bg-background text-base text-text-primary;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-focus-ring;
+  }
 }
 
 @layer components {

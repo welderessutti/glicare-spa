@@ -1,9 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth-service';
 import { LoginRequest } from '../../models/requests/login-request';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SessionService } from '../../../../core/services/session/session-service';
 import { email, form, required, FormRoot, FormField } from '@angular/forms/signals';
 
@@ -19,6 +20,24 @@ export class Login {
   private readonly router = inject(Router);
   private readonly loginModel = signal<LoginRequest>({ email: '', password: '' });
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly passwordVisible = signal(false);
+  protected readonly passwordReset = toSignal(
+    inject(ActivatedRoute).queryParamMap.pipe(
+      map((params) => params.get('passwordReset') === 'true'),
+    ),
+    { initialValue: false },
+  );
+  protected readonly emailInvalid = computed(
+    () => this.loginForm.email().touched() && this.loginForm.email().invalid(),
+  );
+  protected readonly passwordInvalid = computed(
+    () => this.loginForm.password().touched() && this.loginForm.password().invalid(),
+  );
+
+  protected togglePasswordVisibility(): void {
+    this.passwordVisible.update((visible) => !visible);
+  }
+
   private handleLoginError(error: HttpErrorResponse): void {
     switch (error.status) {
       case 401:
@@ -35,9 +54,9 @@ export class Login {
   protected readonly loginForm = form(
     this.loginModel,
     (schemaPath) => {
-      required(schemaPath.email, { message: 'E-mail is required' });
-      email(schemaPath.email, { message: 'Enter a valid email' });
-      required(schemaPath.password, { message: 'Password is required' });
+      required(schemaPath.email, { message: 'Enter your email address.' });
+      email(schemaPath.email, { message: 'Enter a valid email address.' });
+      required(schemaPath.password, { message: 'Enter your password.' });
     },
     {
       submission: {
