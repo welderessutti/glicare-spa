@@ -3,12 +3,12 @@ import { AuthService } from '../../services/auth-service';
 import { LoginRequest } from '../../models/requests/login-request';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SessionService } from '../../../../core/services/session/session-service';
 import { email, form, required, FormRoot, FormField } from '@angular/forms/signals';
 
 @Component({
-  imports: [FormRoot, FormField],
+  imports: [FormRoot, FormField, RouterLink],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',

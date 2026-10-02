@@ -1,6 +1,6 @@
-<form [formRoot]="loginForm" class="flex flex-col bg-gray-300">
+<form [formRoot]="loginForm" class="flex flex-col bg-gray-300 p-2">
   <div class="flex flex-col mb-2">
-    <label for="email"> email </label>
+    <label for="email" class="text-xs self-start"> email </label>
 
     <input
       [formField]="loginForm.email"
@@ -13,14 +13,21 @@
 
     @if (loginForm.email().touched() && loginForm.email().invalid()) {
       @for (error of loginForm.email().errors(); track error.kind) {
-        <span>{{ error.message }}</span>
+        <span class="text-xs text-error self-end">{{ error.message }}</span>
       }
     }
   </div>
 
   <div class="flex flex-col mb-2">
-    <label for="password"> password </label>
-
+    <div class="flex justify-between">
+      <label for="password" class="text-xs"> password </label>
+      <a
+        [routerLink]="['/auth/forgot-password']"
+        target="_self"
+        class="text-xs text-blue-500 underline"
+        >Forgot password</a
+      >
+    </div>
     <input
       [formField]="loginForm.password"
       id="password"
@@ -32,7 +39,7 @@
 
     @if (loginForm.password().touched() && loginForm.password().invalid()) {
       @for (error of loginForm.password().errors(); track error.kind) {
-        <span>{{ error.message }}</span>
+        <span class="text-xs text-error self-end">{{ error.message }}</span>
       }
     }
   </div>
