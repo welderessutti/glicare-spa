@@ -30,9 +30,10 @@
       class="bg-white placeholder-gray-300"
     />
 
-    @if (loginForm.password().touched() && loginForm.password().invalid()) {}
-    @for (error of loginForm.password().errors(); track error.kind) {
-      <span>{{ error.message }}</span>
+    @if (loginForm.password().touched() && loginForm.password().invalid()) {
+      @for (error of loginForm.password().errors(); track error.kind) {
+        <span>{{ error.message }}</span>
+      }
     }
   </div>
 
