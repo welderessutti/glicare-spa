@@ -4,9 +4,10 @@ import { AuthService } from '../../services/auth-service';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { email, form, required, FormField, FormRoot } from '@angular/forms/signals';
+import { RouterLink } from '@angular/router';
 
 @Component({
-  imports: [FormField, FormRoot],
+  imports: [FormField, FormRoot, RouterLink],
   selector: 'app-forgot-password',
   styleUrl: './forgot-password.css',
   templateUrl: './forgot-password.html',

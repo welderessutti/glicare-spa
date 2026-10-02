@@ -1,6 +1,6 @@
 <form [formRoot]="registerForm" class="flex flex-col bg-gray-300">
   <div class="flex flex-col mb-2">
-    <label for="fullName">Full name</label>
+    <label for="fullName" class="self-start">Full name</label>
     <input
       [formField]="registerForm.fullName"
       id="fullName"
@@ -17,7 +17,7 @@
   </div>
 
   <div class="flex flex-col mb-2">
-    <label for="email">Email</label>
+    <label for="email" class="self-start">Email</label>
     <input
       [formField]="registerForm.email"
       id="email"
@@ -35,7 +35,7 @@
   </div>
 
   <div class="flex flex-col mb-2">
-    <label for="password">Password</label>
+    <label for="password" class="self-start">Password</label>
     <input
       [formField]="registerForm.password"
       id="password"
@@ -53,7 +53,7 @@
   </div>
 
   <div class="flex flex-col mb-2">
-    <label for="confirmPassword">Confirm password</label>
+    <label for="confirmPassword" class="self-start">Confirm password</label>
     <input
       [formField]="registerForm.confirmPassword"
       id="confirmPassword"
