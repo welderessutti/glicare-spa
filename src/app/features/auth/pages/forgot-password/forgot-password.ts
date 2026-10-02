@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ForgotPasswordRequest } from '../../models/requests/forgot-password-request';
 import { AuthService } from '../../services/auth-service';
 import { firstValueFrom } from 'rxjs';
@@ -17,11 +17,15 @@ export class ForgotPassword {
   private readonly forgotPasswordModel = signal<ForgotPasswordRequest>({ email: '' });
   protected readonly successMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly emailInvalid = computed(
+    () => this.forgotPasswordForm.email().touched() && this.forgotPasswordForm.email().invalid(),
+  );
+
   protected readonly forgotPasswordForm = form(
     this.forgotPasswordModel,
     (schemaPath) => {
-      required(schemaPath.email, { message: 'Email is required' });
-      email(schemaPath.email, { message: 'Enter a valid email address' });
+      required(schemaPath.email, { message: 'Enter your email address.' });
+      email(schemaPath.email, { message: 'Enter a valid email address.' });
     },
     {
       submission: {
