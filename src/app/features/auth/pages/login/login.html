@@ -11,6 +11,15 @@
     </p>
   </header>
 
+  @if (emailVerified()) {
+    <p
+      role="status"
+      class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+    >
+      Your email address has been confirmed. You can now sign in to Glicare.
+    </p>
+  }
+
   @if (passwordReset()) {
     <p
       role="status"

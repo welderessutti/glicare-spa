@@ -21,6 +21,12 @@ export class Login {
   private readonly loginModel = signal<LoginRequest>({ email: '', password: '' });
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly passwordVisible = signal(false);
+  protected readonly emailVerified = toSignal(
+    inject(ActivatedRoute).queryParamMap.pipe(
+      map((params) => params.get('emailVerified') === 'true'),
+    ),
+    { initialValue: false },
+  );
   protected readonly passwordReset = toSignal(
     inject(ActivatedRoute).queryParamMap.pipe(
       map((params) => params.get('passwordReset') === 'true'),

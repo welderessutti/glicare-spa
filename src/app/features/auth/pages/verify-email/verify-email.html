@@ -1,2 +1,140 @@
-<p>E-mail verified!</p>
-<a [routerLink]="['/auth/login']" class="underline text-blue-500">Login</a>
+<section
+  aria-labelledby="verify-email-title"
+  class="relative rounded-2xl border border-border bg-surface-raised px-5 py-6 sm:p-8"
+>
+  <header>
+    <h1 id="verify-email-title" class="text-2xl font-semibold tracking-tight text-text-primary">
+      Email verification
+    </h1>
+    <p class="mt-2 text-base text-text-secondary">
+      Complete your Glicare registration by confirming your email address.
+    </p>
+  </header>
+
+  <div role="status" aria-atomic="true">
+    @switch (verificationStatus()) {
+      @case ('loading') {
+        <p class="mt-6 flex items-center gap-3 text-base text-text-secondary">
+          <svg
+            class="size-5 shrink-0 animate-spin text-accent motion-reduce:animate-none"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+              class="opacity-25"
+            />
+            <path
+              d="M12 3a9 9 0 0 1 9 9"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span>Verifying your email. Please wait.</span>
+        </p>
+      }
+      @case ('success') {
+        <div
+          class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+        >
+          <p class="font-semibold">Email verified</p>
+          <p class="mt-1">Your email address has been confirmed. You can now sign in to Glicare.</p>
+        </div>
+      }
+      @case ('already-verified') {
+        <div
+          class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+        >
+          <p class="font-semibold">Email already verified</p>
+          <p class="mt-1">
+            {{ errorMessage() }}
+          </p>
+        </div>
+      }
+    }
+  </div>
+
+  <div role="alert" aria-atomic="true">
+    @if (
+      verificationStatus() !== 'loading' &&
+      verificationStatus() !== 'success' &&
+      verificationStatus() !== 'already-verified'
+    ) {
+      @switch (verificationStatus()) {
+        @case ('unavailable') {
+          <div
+            class="mt-6 rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
+          >
+            <p class="font-semibold">Verification link unavailable</p>
+            <p class="mt-1">
+              This link is incomplete. Open the complete link from your most recent verification
+              email.
+            </p>
+          </div>
+        }
+        @default {
+          <div
+            class="mt-6 rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
+          >
+            <p class="font-semibold">Verification unsuccessful</p>
+            <p class="mt-1">{{ errorMessage() }}</p>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  @if (verificationStatus() === 'success') {
+    <p class="mt-6 text-base text-text-secondary">
+      Redirecting you to sign in in {{ redirectCountdown() }} seconds...
+    </p>
+  } @else if (verificationStatus() === 'already-verified') {
+    <a
+      [routerLink]="['/auth/login']"
+      class="mt-6 flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-4 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover"
+    >
+      Go to sign in
+    </a>
+  } @else if (verificationStatus() !== 'loading') {
+    @if (verificationStatus() === 'error') {
+      <button
+        type="button"
+        (click)="retryVerification()"
+        class="mt-6 flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-4 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover"
+      >
+        Try again
+      </button>
+    }
+
+    @if (verificationStatus() === 'invalid' || verificationStatus() === 'expired') {
+      <div class="mt-6 space-y-2">
+        <button
+          type="button"
+          disabled
+          aria-describedby="verify-email-resend-help"
+          class="flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-lg border border-border-strong bg-surface px-4 py-3 text-base font-semibold text-text-secondary"
+        >
+          Request a new verification email
+        </button>
+        <p id="verify-email-resend-help" class="text-sm text-text-secondary">
+          Requesting a new verification email is not available yet.
+        </p>
+      </div>
+    }
+
+    <div class="mt-6 flex justify-center text-sm">
+      <a
+        [routerLink]="['/auth/login']"
+        class="inline-flex min-h-11 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+      >
+        Back to sign in
+      </a>
+    </div>
+  }
+</section>
