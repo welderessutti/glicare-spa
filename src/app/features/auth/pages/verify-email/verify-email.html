@@ -11,62 +11,64 @@
     </p>
   </header>
 
-  <div role="status" aria-atomic="true">
-    @switch (verificationStatus()) {
-      @case ('loading') {
-        <p class="mt-6 flex items-center gap-3 text-base text-text-secondary">
-          <svg
-            class="size-5 shrink-0 animate-spin text-accent motion-reduce:animate-none"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-              class="opacity-25"
-            />
-            <path
-              d="M12 3a9 9 0 0 1 9 9"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-          <span>Verifying your email. Please wait.</span>
-        </p>
-      }
-      @case ('success') {
-        <div
-          class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
-        >
-          <p class="font-semibold">Email verified</p>
-          <p class="mt-1">Your email address has been confirmed. You can now sign in to Glicare.</p>
-        </div>
-      }
-      @case ('already-verified') {
-        <div
-          class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
-        >
-          <p class="font-semibold">Email already verified</p>
-          <p class="mt-1">
-            {{ errorMessage() }}
+  @if (
+    verifyEmailStatus() === 'loading' ||
+    verifyEmailStatus() === 'success' ||
+    verifyEmailStatus() === 'already-verified'
+  ) {
+    <div role="status" aria-atomic="true">
+      @switch (verifyEmailStatus()) {
+        @case ('loading') {
+          <p class="mt-6 flex items-center gap-3 text-base text-text-secondary">
+            <svg
+              class="size-5 shrink-0 animate-spin text-accent motion-reduce:animate-none"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+                class="opacity-25"
+              />
+              <path
+                d="M12 3a9 9 0 0 1 9 9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+            <span>Verifying your email. Please wait.</span>
           </p>
-        </div>
+        }
+        @case ('success') {
+          <div
+            class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+          >
+            <p class="font-semibold">Email verified</p>
+            <p class="mt-1">
+              Your email address has been confirmed. You can now sign in to Glicare.
+            </p>
+          </div>
+        }
+        @case ('already-verified') {
+          <div
+            class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+          >
+            <p class="font-semibold">Email already verified</p>
+            <p class="mt-1">
+              {{ errorMessage() }}
+            </p>
+          </div>
+        }
       }
-    }
-  </div>
-
-  <div role="alert" aria-atomic="true">
-    @if (
-      verificationStatus() !== 'loading' &&
-      verificationStatus() !== 'success' &&
-      verificationStatus() !== 'already-verified'
-    ) {
-      @switch (verificationStatus()) {
+    </div>
+  } @else {
+    <div role="alert" aria-atomic="true">
+      @switch (verifyEmailStatus()) {
         @case ('unavailable') {
           <div
             class="mt-6 rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
@@ -87,22 +89,22 @@
           </div>
         }
       }
-    }
-  </div>
+    </div>
+  }
 
-  @if (verificationStatus() === 'success') {
+  @if (verifyEmailStatus() === 'success') {
     <p class="mt-6 text-base text-text-secondary">
       Redirecting you to sign in in {{ redirectCountdown() }} seconds...
     </p>
-  } @else if (verificationStatus() === 'already-verified') {
+  } @else if (verifyEmailStatus() === 'already-verified') {
     <a
       [routerLink]="['/auth/login']"
       class="mt-6 flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-4 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover"
     >
       Go to sign in
     </a>
-  } @else if (verificationStatus() !== 'loading') {
-    @if (verificationStatus() === 'error') {
+  } @else if (verifyEmailStatus() !== 'loading') {
+    @if (verifyEmailStatus() === 'error') {
       <button
         type="button"
         (click)="retryVerification()"
@@ -112,7 +114,7 @@
       </button>
     }
 
-    @if (verificationStatus() === 'invalid' || verificationStatus() === 'expired') {
+    @if (verifyEmailStatus() === 'invalid' || verifyEmailStatus() === 'expired') {
       <div class="mt-6 space-y-2">
         <button
           type="button"

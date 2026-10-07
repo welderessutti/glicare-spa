@@ -30,6 +30,7 @@ export class Register {
     password: '',
     confirmPassword: '',
   });
+  protected readonly registrationSucceeded = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly passwordVisible = signal(false);
   protected readonly confirmPasswordVisible = signal(false);
@@ -96,10 +97,11 @@ export class Register {
       submission: {
         action: async (field) => {
           this.errorMessage.set(null);
+          this.registrationSucceeded.set(false);
 
           try {
             await firstValueFrom(this.authService.register(field().value()));
-            await this.router.navigate(['/auth/check-email']);
+            this.registrationSucceeded.set(true);
           } catch (error) {
             const httpError = error as HttpErrorResponse;
             this.handleRegisterError(httpError);

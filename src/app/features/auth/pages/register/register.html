@@ -11,207 +11,238 @@
     </p>
   </header>
 
-  <form
-    [formRoot]="registerForm"
-    aria-labelledby="register-title"
-    aria-describedby="register-description"
-    [attr.aria-busy]="registerForm().submitting()"
-    class="mt-6 space-y-5"
-  >
-    <fieldset [disabled]="registerForm().submitting()" class="min-w-0 space-y-5">
-      <legend class="sr-only">Account details</legend>
-
-      <div class="space-y-2">
-        <label for="register-full-name" class="inline-flex text-sm font-medium text-text-primary"
-          >Full name</label
-        >
-        <input
-          [formField]="registerForm.fullName"
-          id="register-full-name"
-          type="text"
-          autocomplete="name"
-          placeholder="Your full name"
-          [attr.aria-invalid]="fullNameInvalid()"
-          [attr.aria-describedby]="fullNameInvalid() ? 'register-full-name-error' : null"
-          [class.border-error]="fullNameInvalid()"
-          [class.border-border-strong]="!fullNameInvalid()"
-          class="min-h-12 w-full rounded-lg border bg-surface-raised px-3 py-3 text-base text-text-primary placeholder:text-text-muted disabled:bg-surface"
-        />
-
-        @if (fullNameInvalid()) {
-          <ul id="register-full-name-error" class="space-y-1 text-sm text-error">
-            @for (error of registerForm.fullName().errors(); track error.kind) {
-              <li>{{ error.message }}</li>
-            }
-          </ul>
-        }
-      </div>
-
-      <div class="space-y-2">
-        <label for="register-email" class="inline-flex text-sm font-medium text-text-primary"
-          >Email</label
-        >
-        <input
-          [formField]="registerForm.email"
-          id="register-email"
-          type="email"
-          autocomplete="email"
-          autocapitalize="none"
-          [spellcheck]="false"
-          placeholder="you@example.com"
-          [attr.aria-invalid]="emailInvalid()"
-          [attr.aria-describedby]="emailInvalid() ? 'register-email-error' : null"
-          [class.border-error]="emailInvalid()"
-          [class.border-border-strong]="!emailInvalid()"
-          class="min-h-12 w-full rounded-lg border bg-surface-raised px-3 py-3 text-base text-text-primary placeholder:text-text-muted disabled:bg-surface"
-        />
-
-        @if (emailInvalid()) {
-          <ul id="register-email-error" class="space-y-1 text-sm text-error">
-            @for (error of registerForm.email().errors(); track error.kind) {
-              <li>{{ error.message }}</li>
-            }
-          </ul>
-        }
-      </div>
-
-      <div class="space-y-2">
-        <label for="register-password" class="inline-flex text-sm font-medium text-text-primary">
-          Password
-        </label>
-        <div class="relative">
-          <input
-            [formField]="registerForm.password"
-            id="register-password"
-            [type]="passwordVisible() ? 'text' : 'password'"
-            autocomplete="new-password"
-            [attr.aria-invalid]="passwordInvalid()"
-            [attr.aria-describedby]="
-              passwordInvalid()
-                ? 'register-password-hint register-password-error'
-                : 'register-password-hint'
-            "
-            [class.border-error]="passwordInvalid()"
-            [class.border-border-strong]="!passwordInvalid()"
-            class="min-h-12 w-full rounded-lg border bg-surface-raised py-3 pr-20 pl-3 text-base text-text-primary disabled:bg-surface"
-          />
-          <button
-            type="button"
-            aria-controls="register-password"
-            [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
-            (click)="togglePasswordVisibility()"
-            class="absolute inset-y-1 right-1 min-h-11 min-w-16 cursor-pointer rounded-md px-3 text-sm font-medium text-accent hover:bg-accent-soft hover:text-accent-hover disabled:cursor-wait"
-          >
-            {{ passwordVisible() ? 'Hide' : 'Show' }}
-          </button>
-        </div>
-
-        <p id="register-password-hint" class="text-sm text-text-secondary">
-          Use 8 to 64 characters.
-        </p>
-
-        @if (passwordInvalid()) {
-          <ul id="register-password-error" class="space-y-1 text-sm text-error">
-            @for (error of registerForm.password().errors(); track error.kind) {
-              <li>{{ error.message }}</li>
-            }
-          </ul>
-        }
-      </div>
-
-      <div class="space-y-2">
-        <label
-          for="register-confirm-password"
-          class="inline-flex text-sm font-medium text-text-primary"
-        >
-          Confirm password
-        </label>
-        <div class="relative">
-          <input
-            [formField]="registerForm.confirmPassword"
-            id="register-confirm-password"
-            [type]="confirmPasswordVisible() ? 'text' : 'password'"
-            autocomplete="new-password"
-            [attr.aria-invalid]="confirmPasswordInvalid()"
-            [attr.aria-describedby]="
-              confirmPasswordInvalid() ? 'register-confirm-password-error' : null
-            "
-            [class.border-error]="confirmPasswordInvalid()"
-            [class.border-border-strong]="!confirmPasswordInvalid()"
-            class="min-h-12 w-full rounded-lg border bg-surface-raised py-3 pr-20 pl-3 text-base text-text-primary disabled:bg-surface"
-          />
-          <button
-            type="button"
-            aria-controls="register-confirm-password"
-            [attr.aria-label]="
-              confirmPasswordVisible() ? 'Hide password confirmation' : 'Show password confirmation'
-            "
-            (click)="toggleConfirmPasswordVisibility()"
-            class="absolute inset-y-1 right-1 min-h-11 min-w-16 cursor-pointer rounded-md px-3 text-sm font-medium text-accent hover:bg-accent-soft hover:text-accent-hover disabled:cursor-wait"
-          >
-            {{ confirmPasswordVisible() ? 'Hide' : 'Show' }}
-          </button>
-        </div>
-
-        @if (confirmPasswordInvalid()) {
-          <ul id="register-confirm-password-error" class="space-y-1 text-sm text-error">
-            @for (error of registerForm.confirmPassword().errors(); track error.kind) {
-              <li>{{ error.message }}</li>
-            }
-          </ul>
-        }
-      </div>
-    </fieldset>
-
-    @if (errorMessage()) {
-      <div
-        role="alert"
-        class="rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
-      >
-        <p class="font-semibold">We couldn't create your account</p>
-        <p class="mt-1">{{ errorMessage() }}</p>
-      </div>
-    }
-
-    <button
-      type="submit"
-      [disabled]="registerForm().submitting()"
-      class="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+  @if (!registrationSucceeded()) {
+    <form
+      [formRoot]="registerForm"
+      aria-labelledby="register-title"
+      aria-describedby="register-description"
+      [attr.aria-busy]="registerForm().submitting()"
+      class="mt-6 space-y-5"
     >
-      @if (registerForm().submitting()) {
-        <svg
-          class="size-5 animate-spin motion-reduce:animate-none"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
-          <path
-            d="M12 3a9 9 0 0 1 9 9"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
+      <fieldset [disabled]="registerForm().submitting()" class="min-w-0 space-y-5">
+        <legend class="sr-only">Account details</legend>
+
+        <div class="space-y-2">
+          <label for="register-full-name" class="inline-flex text-sm font-medium text-text-primary"
+            >Full name</label
+          >
+          <input
+            [formField]="registerForm.fullName"
+            id="register-full-name"
+            type="text"
+            autocomplete="name"
+            placeholder="Your full name"
+            [attr.aria-invalid]="fullNameInvalid()"
+            [attr.aria-describedby]="fullNameInvalid() ? 'register-full-name-error' : null"
+            [class.border-error]="fullNameInvalid()"
+            [class.border-border-strong]="!fullNameInvalid()"
+            class="min-h-12 w-full rounded-lg border bg-surface-raised px-3 py-3 text-base text-text-primary placeholder:text-text-muted disabled:bg-surface"
           />
-        </svg>
-        <span>Creating account…</span>
-      } @else {
-        <span>Create account</span>
+
+          @if (fullNameInvalid()) {
+            <ul id="register-full-name-error" class="space-y-1 text-sm text-error">
+              @for (error of registerForm.fullName().errors(); track error.kind) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+
+        <div class="space-y-2">
+          <label for="register-email" class="inline-flex text-sm font-medium text-text-primary"
+            >Email</label
+          >
+          <input
+            [formField]="registerForm.email"
+            id="register-email"
+            type="email"
+            autocomplete="email"
+            autocapitalize="none"
+            [spellcheck]="false"
+            placeholder="you@example.com"
+            [attr.aria-invalid]="emailInvalid()"
+            [attr.aria-describedby]="emailInvalid() ? 'register-email-error' : null"
+            [class.border-error]="emailInvalid()"
+            [class.border-border-strong]="!emailInvalid()"
+            class="min-h-12 w-full rounded-lg border bg-surface-raised px-3 py-3 text-base text-text-primary placeholder:text-text-muted disabled:bg-surface"
+          />
+
+          @if (emailInvalid()) {
+            <ul id="register-email-error" class="space-y-1 text-sm text-error">
+              @for (error of registerForm.email().errors(); track error.kind) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+
+        <div class="space-y-2">
+          <label for="register-password" class="inline-flex text-sm font-medium text-text-primary">
+            Password
+          </label>
+          <div class="relative">
+            <input
+              [formField]="registerForm.password"
+              id="register-password"
+              [type]="passwordVisible() ? 'text' : 'password'"
+              autocomplete="new-password"
+              [attr.aria-invalid]="passwordInvalid()"
+              [attr.aria-describedby]="
+                passwordInvalid()
+                  ? 'register-password-hint register-password-error'
+                  : 'register-password-hint'
+              "
+              [class.border-error]="passwordInvalid()"
+              [class.border-border-strong]="!passwordInvalid()"
+              class="min-h-12 w-full rounded-lg border bg-surface-raised py-3 pr-20 pl-3 text-base text-text-primary disabled:bg-surface"
+            />
+            <button
+              type="button"
+              aria-controls="register-password"
+              [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+              (click)="togglePasswordVisibility()"
+              class="absolute inset-y-1 right-1 min-h-11 min-w-16 cursor-pointer rounded-md px-3 text-sm font-medium text-accent hover:bg-accent-soft hover:text-accent-hover disabled:cursor-wait"
+            >
+              {{ passwordVisible() ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+
+          <p id="register-password-hint" class="text-sm text-text-secondary">
+            Use 8 to 64 characters.
+          </p>
+
+          @if (passwordInvalid()) {
+            <ul id="register-password-error" class="space-y-1 text-sm text-error">
+              @for (error of registerForm.password().errors(); track error.kind) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+
+        <div class="space-y-2">
+          <label
+            for="register-confirm-password"
+            class="inline-flex text-sm font-medium text-text-primary"
+          >
+            Confirm password
+          </label>
+          <div class="relative">
+            <input
+              [formField]="registerForm.confirmPassword"
+              id="register-confirm-password"
+              [type]="confirmPasswordVisible() ? 'text' : 'password'"
+              autocomplete="new-password"
+              [attr.aria-invalid]="confirmPasswordInvalid()"
+              [attr.aria-describedby]="
+                confirmPasswordInvalid() ? 'register-confirm-password-error' : null
+              "
+              [class.border-error]="confirmPasswordInvalid()"
+              [class.border-border-strong]="!confirmPasswordInvalid()"
+              class="min-h-12 w-full rounded-lg border bg-surface-raised py-3 pr-20 pl-3 text-base text-text-primary disabled:bg-surface"
+            />
+            <button
+              type="button"
+              aria-controls="register-confirm-password"
+              [attr.aria-label]="
+                confirmPasswordVisible()
+                  ? 'Hide password confirmation'
+                  : 'Show password confirmation'
+              "
+              (click)="toggleConfirmPasswordVisibility()"
+              class="absolute inset-y-1 right-1 min-h-11 min-w-16 cursor-pointer rounded-md px-3 text-sm font-medium text-accent hover:bg-accent-soft hover:text-accent-hover disabled:cursor-wait"
+            >
+              {{ confirmPasswordVisible() ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+
+          @if (confirmPasswordInvalid()) {
+            <ul id="register-confirm-password-error" class="space-y-1 text-sm text-error">
+              @for (error of registerForm.confirmPassword().errors(); track error.kind) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      </fieldset>
+
+      @if (errorMessage()) {
+        <div
+          role="alert"
+          class="rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
+        >
+          <p class="font-semibold">We couldn't create your account</p>
+          <p class="mt-1">{{ errorMessage() }}</p>
+        </div>
       }
-    </button>
-  </form>
 
-  <p role="status" aria-atomic="true" class="sr-only">
-    @if (registerForm().submitting()) {
-      Creating your account. Please wait.
-    }
-  </p>
+      <button
+        type="submit"
+        [disabled]="registerForm().submitting()"
+        class="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+      >
+        @if (registerForm().submitting()) {
+          <svg
+            class="size-5 animate-spin motion-reduce:animate-none"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+              class="opacity-25"
+            />
+            <path
+              d="M12 3a9 9 0 0 1 9 9"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span>Creating account…</span>
+        } @else {
+          <span>Create account</span>
+        }
+      </button>
+    </form>
 
-  <p class="mt-6 flex flex-wrap items-center justify-center gap-x-1 text-sm text-text-secondary">
-    Already have an account?
-    <a
-      [routerLink]="['/auth/login']"
-      class="inline-flex min-h-11 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
-      >Sign in</a
-    >
-  </p>
+    <p role="status" aria-atomic="true" class="sr-only">
+      @if (registerForm().submitting()) {
+        Creating your account. Please wait.
+      }
+    </p>
+  } @else {
+    <div role="status" aria-atomic="true">
+      <div
+        class="mt-6 rounded-lg border border-success bg-surface-light px-4 py-3 text-sm text-success"
+      >
+        <p class="font-semibold">Account created</p>
+        <p class="mt-1">Check your inbox to verify your email.</p>
+      </div>
+    </div>
+  }
+
+  @if (!registrationSucceeded()) {
+    <p class="mt-6 flex flex-wrap items-center justify-center gap-x-1 text-sm text-text-secondary">
+      Already have an account?
+      <a
+        [routerLink]="['/auth/login']"
+        class="inline-flex min-h-11 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+        >Sign in</a
+      >
+    </p>
+  } @else {
+    <div class="mt-6 flex justify-center text-sm">
+      <a
+        [routerLink]="['/auth/login']"
+        class="inline-flex min-h-11 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+      >
+        Go to sign in
+      </a>
+    </div>
+  }
 </section>
