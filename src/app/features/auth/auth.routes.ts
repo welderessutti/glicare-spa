@@ -32,19 +32,25 @@ export const AUTH_ROUTES: Routes = [
       },
       {
         path: 'reset-password',
+        canActivate: [guestGuard],
         title: 'Reset password | Glicare',
         loadComponent: () =>
           import('./pages/reset-password/reset-password').then((m) => m.ResetPassword),
       },
       {
         path: 'verify-email',
+        canActivate: [guestGuard],
         title: 'Verify email | Glicare',
         loadComponent: () => import('./pages/verify-email/verify-email').then((m) => m.VerifyEmail),
       },
       {
-        path: 'check-email',
-        title: 'Check email | Glicare',
-        loadComponent: () => import('./pages/check-email/check-email').then((m) => m.CheckEmail),
+        path: 'resend-verification',
+        canActivate: [guestGuard],
+        title: 'Resend verification | Glicare',
+        loadComponent: () =>
+          import('./pages/resend-verification/resend-verification').then(
+            (m) => m.ResendVerification,
+          ),
       },
     ],
   },

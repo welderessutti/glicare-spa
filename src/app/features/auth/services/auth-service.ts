@@ -7,6 +7,7 @@ import { ForgotPasswordRequest } from '../models/requests/forgot-password-reques
 import { ResetPasswordRequest } from '../models/requests/reset-password-request';
 import { API_URL } from '../../../core/config/api-url';
 import { SessionAuthenticatedUser } from '../../../core/models/session-authenticated-user';
+import { ResendVerificationRequest } from '../models/requests/resend-verification-request';
 
 @Service()
 export class AuthService {
@@ -32,5 +33,9 @@ export class AuthService {
 
   public verifyEmail(token: string): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}${this.slug}/verify-email`, { token });
+  }
+
+  public resendVerification(request: ResendVerificationRequest): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}${this.slug}/resend-verification`, request);
   }
 }

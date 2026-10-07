@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CheckEmail } from './check-email';
+import { ResendVerification } from './resend-verification';
 
-describe('CheckEmail', () => {
-  let component: CheckEmail;
-  let fixture: ComponentFixture<CheckEmail>;
+describe('ResendVerification', () => {
+  let component: ResendVerification;
+  let fixture: ComponentFixture<ResendVerification>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CheckEmail],
+      imports: [ResendVerification],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(CheckEmail);
+    fixture = TestBed.createComponent(ResendVerification);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
