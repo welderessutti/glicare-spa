@@ -159,8 +159,18 @@
     New to Glicare?
     <a
       [routerLink]="['/auth/register']"
-      class="inline-flex min-h-11 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+      class="inline-flex items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
       >Create an account</a
     >
+  </p>
+
+  <p class="mt-6 flex flex-wrap items-center justify-center text-sm text-text-secondary">
+    Didn't receive your verification email?
+    <a
+      [routerLink]="['/auth/resend-verification']"
+      class="inline-flex mt-2 items-center rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
+    >
+      Send a new verification link
+    </a>
   </p>
 </section>
