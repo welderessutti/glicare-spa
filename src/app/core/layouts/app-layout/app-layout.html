@@ -1,16 +1,307 @@
-<p>app-layout works!</p>
-<button
-  (click)="onSubmit()"
-  type="submit"
-  [disabled]="isLoading()"
-  [class.opacity-75]="isLoading()"
-  [class.opacity-100]="!isLoading()"
-  [class.cursor-pointer]="!isLoading()"
-  class="flex gap-3 justify-center items-center p-2 bg-gray-700 text-white"
+<div
+  class="min-h-dvh bg-background pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-text-primary lg:pl-60"
 >
-  @if (isLoading()) {
-    <span>Loading...</span>
-  } @else {
-    <span>Logout</span>
-  }
-</button>
+  <a
+    href="#app-content"
+    (click)="$event.preventDefault(); appContent.focus()"
+    class="fixed top-3 left-4 z-50 -translate-y-32 rounded-lg bg-accent px-4 py-3 font-semibold text-text-inverse focus:translate-y-0"
+  >
+    Skip to content
+  </a>
+
+  <aside
+    aria-label="Glicare sidebar"
+    class="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-border bg-surface-raised lg:flex"
+  >
+    <div class="flex min-h-16 items-center border-b border-border-light px-6">
+      <a
+        routerLink="/dashboard"
+        aria-label="Glicare home"
+        class="rounded-sm text-xl font-bold tracking-tight text-accent"
+      >
+        Glicare
+      </a>
+    </div>
+
+    <div class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto p-4">
+      <nav aria-label="Primary">
+        <ul class="space-y-1">
+          @for (item of primaryNavigation; track item.label) {
+            <li>
+              @if (item.route) {
+                <a
+                  [routerLink]="item.route"
+                  routerLinkActive
+                  ariaCurrentWhenActive="page"
+                  class="flex min-h-12 items-center gap-3 rounded-lg border-l-4 border-transparent px-3 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold aria-[current=page]:text-accent"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                    class="size-5 shrink-0"
+                  >
+                    <path [attr.d]="item.icon" />
+                  </svg>
+                  <span>{{ item.label }}</span>
+                </a>
+              } @else {
+                <button
+                  type="button"
+                  disabled
+                  class="flex min-h-12 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 py-3 text-left text-sm text-text-muted"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                    class="size-5 shrink-0"
+                  >
+                    <path [attr.d]="item.icon" />
+                  </svg>
+                  <span>{{ item.label }}<span class="sr-only"> — Coming soon</span></span>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <nav aria-label="Account" class="mt-auto border-t border-border-light pt-4">
+        <ul class="space-y-1">
+          @for (item of secondaryNavigation; track item.label) {
+            <li>
+              <button
+                type="button"
+                disabled
+                class="flex min-h-12 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 py-3 text-left text-sm text-text-muted"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="size-5 shrink-0"
+                >
+                  <path [attr.d]="item.icon" />
+                </svg>
+                <span>{{ item.label }}<span class="sr-only"> — Coming soon</span></span>
+              </button>
+            </li>
+          }
+        </ul>
+        <p class="mt-4 px-4 text-xs leading-relaxed text-text-muted">More features coming soon.</p>
+      </nav>
+    </div>
+  </aside>
+
+  <header class="border-b border-border bg-surface-raised pt-[env(safe-area-inset-top)]">
+    <div
+      class="container-padding flex min-h-16 min-w-0 items-center justify-between gap-3 py-2 lg:justify-end"
+    >
+      <a
+        routerLink="/dashboard"
+        aria-label="Glicare home"
+        class="rounded-sm text-xl font-bold tracking-tight text-accent lg:hidden"
+      >
+        Glicare
+      </a>
+
+      <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div class="flex min-w-0 items-center gap-2">
+          <span
+            class="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-light text-text-secondary"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              aria-hidden="true"
+              class="size-5"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+            </svg>
+          </span>
+          <span class="sr-only sm:not-sr-only sm:max-w-48 sm:truncate sm:text-sm sm:font-medium">{{
+            user()?.fullName || 'Your account'
+          }}</span>
+        </div>
+
+        <button
+          type="button"
+          (click)="onLogout()"
+          [disabled]="isLoggingOut()"
+          [attr.aria-busy]="isLoggingOut()"
+          class="min-h-11 shrink-0 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-accent enabled:hover:bg-accent-soft enabled:hover:text-accent-hover disabled:cursor-wait"
+        >
+          {{ isLoggingOut() ? 'Signing out…' : 'Sign out' }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main
+    #appContent
+    id="app-content"
+    tabindex="-1"
+    class="container-padding min-w-0 scroll-mt-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pt-8 lg:pb-10"
+  >
+    @if (logoutError()) {
+      <p
+        role="alert"
+        class="mb-6 rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
+      >
+        {{ logoutError() }}
+      </p>
+    }
+    <p role="status" aria-atomic="true" class="sr-only">
+      @if (isLoggingOut()) {
+        Signing out. Please wait.
+      }
+    </p>
+
+    <router-outlet />
+  </main>
+
+  <nav
+    aria-label="Primary"
+    class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface-raised pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
+  >
+    <ul
+      class="mx-auto grid max-w-xl grid-cols-4 gap-1 pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))]"
+    >
+      @for (item of mobileNavigation; track item.label) {
+        <li>
+          @if (item.route) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive
+              ariaCurrentWhenActive="page"
+              class="flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 border-transparent px-1 py-2 text-xs font-medium text-text-secondary hover:bg-surface-hover aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold aria-[current=page]:text-accent"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                class="size-5 shrink-0"
+              >
+                <path [attr.d]="item.icon" />
+              </svg>
+              <span>{{ item.label }}</span>
+            </a>
+          } @else {
+            <button
+              type="button"
+              disabled
+              class="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-lg border-t-2 border-transparent px-1 py-2 text-xs text-text-muted"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                class="size-5 shrink-0"
+              >
+                <path [attr.d]="item.icon" />
+              </svg>
+              <span>{{ item.label }}<span class="sr-only"> — Coming soon</span></span>
+            </button>
+          }
+        </li>
+      }
+      <li class="group">
+        <button
+          type="button"
+          popovertarget="app-more-navigation"
+          aria-controls="app-more-navigation"
+          class="flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-t-2 border-transparent px-1 py-2 text-xs font-medium text-text-secondary hover:bg-surface-hover group-has-[:popover-open]:border-accent group-has-[:popover-open]:bg-accent-soft group-has-[:popover-open]:font-semibold group-has-[:popover-open]:text-accent"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-5">
+            <circle cx="5" cy="12" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="19" cy="12" r="1.5" />
+          </svg>
+          <span>More</span>
+        </button>
+
+        <div
+          id="app-more-navigation"
+          popover
+          class="fixed inset-auto right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] m-0 max-h-[calc(100dvh-7rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-border bg-surface-raised p-3 text-text-primary lg:hidden"
+        >
+          <div class="mb-2 flex items-center justify-between gap-3 pl-3">
+            <h2 id="app-more-title" class="text-sm font-semibold">More</h2>
+            <button
+              type="button"
+              popovertarget="app-more-navigation"
+              popovertargetaction="hide"
+              aria-label="Close additional navigation"
+              class="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary hover:bg-surface-hover"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                aria-hidden="true"
+                class="size-5"
+              >
+                <path d="m6 6 12 12 M6 18 18 6" />
+              </svg>
+            </button>
+          </div>
+          <nav aria-labelledby="app-more-title">
+            <ul class="space-y-1">
+              @for (item of moreNavigation; track item.label) {
+                <li>
+                  <button
+                    type="button"
+                    disabled
+                    class="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-text-muted"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                      class="size-5 shrink-0"
+                    >
+                      <path [attr.d]="item.icon" />
+                    </svg>
+                    <span>{{ item.label }}</span>
+                    <span class="ml-auto text-xs">Coming soon</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </nav>
+        </div>
+      </li>
+    </ul>
+  </nav>
+</div>
