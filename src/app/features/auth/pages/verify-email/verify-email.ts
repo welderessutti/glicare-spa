@@ -1,7 +1,7 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth-service';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { VerifyEmailStatus } from '../../models/verify-email-status';
 
@@ -29,7 +29,7 @@ export class VerifyEmail implements OnInit, OnDestroy {
       return;
     }
 
-    void this.verifyEmailWithToken(this.token);
+    this.verifyEmailWithToken(this.token);
   }
 
   ngOnDestroy(): void {
@@ -91,25 +91,28 @@ export class VerifyEmail implements OnInit, OnDestroy {
     }
   }
 
-  private async verifyEmailWithToken(token: string): Promise<void> {
+  private verifyEmailWithToken(token: string): void {
     this.errorMessage.set(null);
     this.verifyEmailStatus.set('loading');
 
-    try {
-      await firstValueFrom(this.authService.verifyEmail(token));
-      this.verifyEmailStatus.set('success');
-      this.startRedirectCountdown();
-    } catch (error) {
-      const httpError = error as HttpErrorResponse;
-      this.handleVerifyEmailError(httpError);
-    }
+    this.authService.verifyEmail(token).subscribe({
+      next: () => {
+        this.verifyEmailStatus.set('success');
+        this.startRedirectCountdown();
+      },
+      error: (error) => {
+        const httpError = error as HttpErrorResponse;
+        this.handleVerifyEmailError(httpError);
+      },
+    });
   }
 
   protected retryVerification(): void {
+    if (this.verifyEmailStatus() === 'loading') return;
     if (!this.token) {
       this.verifyEmailStatus.set('unavailable');
       return;
     }
-    void this.verifyEmailWithToken(this.token);
+    this.verifyEmailWithToken(this.token);
   }
 }

@@ -49,7 +49,7 @@ export class AppLayout {
       .pipe(finalize(() => this.isLoggingOut.set(false)))
       .subscribe({
         next: () => {
-          this.router.navigate(['/auth/login']);
+          void this.router.navigate(['/auth/login']);
         },
         error: () => {
           this.logoutError.set("We couldn't sign you out. Please try again.");
