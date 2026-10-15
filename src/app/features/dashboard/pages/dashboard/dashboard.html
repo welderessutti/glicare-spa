@@ -1,1 +1,154 @@
-<p>dashboard works!</p>
+<div class="space-y-8 sm:space-y-10">
+  <header>
+    <p class="mb-2 text-sm font-medium text-text-secondary">Dashboard</p>
+    <h1 class="text-2xl font-semibold tracking-tight wrap-break-word sm:text-3xl">
+      {{ greeting() }}
+    </h1>
+    <p class="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base">
+      Here’s an overview of your recent health activity.
+    </p>
+    <p class="mt-3 text-xs leading-relaxed text-text-muted">
+      Sample data · Measurements and summaries below are for preview.
+    </p>
+  </header>
+
+  <section aria-labelledby="dashboard-summary-title">
+    <h2 id="dashboard-summary-title" class="sr-only">Recent activity summary</h2>
+    <div class="grid gap-3 md:grid-cols-3 md:gap-4">
+      <article class="min-w-0 rounded-xl border border-border bg-surface-raised p-5">
+        <h3 class="text-sm font-medium text-text-secondary">Latest result</h3>
+        <p class="mt-3 flex flex-wrap items-baseline gap-x-2 tabular-nums">
+          <span class="text-3xl font-semibold tracking-tight">104</span>
+          <span class="text-sm text-text-secondary">mg/dL</span>
+        </p>
+        <p class="mt-2 text-sm text-text-secondary">Within target range</p>
+      </article>
+
+      <article class="min-w-0 rounded-xl border border-border bg-surface-raised p-5">
+        <h3 class="text-sm font-medium text-text-secondary">Recent trend</h3>
+        <p class="mt-3 text-2xl font-semibold tracking-tight">Stable</p>
+        <p class="mt-2 text-sm text-text-secondary">Last 7 days</p>
+      </article>
+
+      <article class="min-w-0 rounded-xl border border-border bg-surface-raised p-5">
+        <h3 class="text-sm font-medium text-text-secondary">Last measurement</h3>
+        <p class="mt-3 text-xl font-semibold tracking-tight tabular-nums">Today, 08:42</p>
+        <p class="mt-2 text-sm text-text-secondary">Blood glucose</p>
+      </article>
+    </div>
+  </section>
+
+  <section
+    aria-labelledby="dashboard-add-title"
+    class="flex flex-col gap-4 rounded-xl bg-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+  >
+    <div>
+      <h2 id="dashboard-add-title" class="text-base font-semibold">Keep your records up to date</h2>
+      <p id="dashboard-add-description" class="mt-1 text-sm leading-relaxed text-text-secondary">
+        Record a new measurement. Coming soon.
+      </p>
+    </div>
+    <button
+      type="button"
+      disabled
+      aria-describedby="dashboard-add-description"
+      class="flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-text-inverse disabled:cursor-not-allowed"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        aria-hidden="true"
+        class="size-5 shrink-0"
+      >
+        <path d="M12 5v14 M5 12h14" />
+      </svg>
+      Add new record
+    </button>
+  </section>
+
+  <div class="grid gap-8 sm:gap-10 xl:grid-cols-5">
+    <section aria-labelledby="dashboard-records-title" class="min-w-0 xl:col-span-3">
+      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h2 id="dashboard-records-title" class="text-lg font-semibold tracking-tight">
+          Recent records
+        </h2>
+        <button
+          type="button"
+          disabled
+          class="min-h-11 rounded-lg py-2 text-left text-sm font-medium text-text-secondary disabled:cursor-not-allowed"
+        >
+          View history <span class="text-xs font-normal text-text-muted">· Coming soon</span>
+        </button>
+      </div>
+
+      <ul class="mt-3 divide-y divide-border-light border-y border-border-light">
+        @for (record of recentRecords; track record.date) {
+          <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
+            <div>
+              <p class="text-sm font-medium">{{ record.label }}</p>
+              <p class="mt-1 text-xs text-text-muted">{{ record.date }} · {{ record.time }}</p>
+            </div>
+            <p class="flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
+              <span class="text-base font-semibold">{{ record.value }}</span>
+              <span class="text-xs text-text-secondary">{{ record.unit }}</span>
+            </p>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section aria-labelledby="dashboard-trend-title" class="min-w-0 xl:col-span-2">
+      <div class="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <h2 id="dashboard-trend-title" class="text-lg font-semibold tracking-tight">
+          Glucose trend
+        </h2>
+        <p class="text-sm text-text-muted">Last 7 days</p>
+      </div>
+
+      <figure class="mt-3">
+        <div
+          class="flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border-strong bg-surface-light p-5 text-center"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="size-8 text-text-muted"
+          >
+            <path d="M4 4v16h16 M8 15l4-4 4 2 4-6" />
+          </svg>
+          <p class="text-sm font-medium text-text-secondary">Chart coming soon</p>
+        </div>
+        <figcaption class="mt-3 text-xs leading-relaxed text-text-muted">
+          Your glucose measurements over time will appear here.
+        </figcaption>
+      </figure>
+
+      <p class="mt-4 text-sm text-text-secondary">
+        Average: <span class="font-semibold text-text-primary tabular-nums">108 mg/dL</span>
+      </p>
+      <p class="mt-1 text-sm leading-relaxed text-text-secondary">
+        Stable compared with the previous week.
+      </p>
+    </section>
+  </div>
+
+  <section aria-labelledby="dashboard-overview-title" class="border-t border-border pt-6">
+    <h2 id="dashboard-overview-title" class="text-lg font-semibold tracking-tight">
+      Health overview
+    </h2>
+    <p class="mt-2 text-sm leading-relaxed text-text-secondary">
+      The sample glucose measurements are within the example target range.
+    </p>
+    <p class="mt-1 text-xs leading-relaxed text-text-muted">
+      A summary of measurements, for preview only.
+    </p>
+  </section>
+</div>
