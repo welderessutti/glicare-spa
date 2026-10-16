@@ -1,0 +1,98 @@
+<div class="max-w-2xl space-y-8">
+  <header>
+    <h1
+      id="records-title"
+      class="text-2xl font-semibold tracking-tight wrap-break-word sm:text-3xl"
+    >
+      Add exam result
+    </h1>
+    <p
+      id="records-description"
+      class="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base"
+    >
+      Record your hemoglobin A1c result to follow your progress over time.
+    </p>
+  </header>
+
+  <form
+    (submit)="onSubmit($event)"
+    aria-labelledby="records-title"
+    aria-describedby="records-description"
+    class="space-y-6 rounded-xl border border-border bg-surface-raised p-5 sm:p-6"
+  >
+    <fieldset class="min-w-0 space-y-6">
+      <legend class="sr-only">Exam details</legend>
+
+      <dl class="space-y-2 border-b border-border-light pb-5">
+        <dt class="text-sm font-medium text-text-secondary">Exam</dt>
+        <dd class="text-base font-semibold">Hemoglobin A1c</dd>
+      </dl>
+
+      <p class="text-sm text-text-secondary">Both fields are required.</p>
+
+      <div class="space-y-2">
+        <label for="records-result" class="inline-flex text-sm font-medium text-text-primary">
+          Result (%)
+        </label>
+        <input
+          id="records-result"
+          name="result"
+          type="number"
+          inputmode="decimal"
+          step="any"
+          min="0"
+          max="100"
+          required
+          aria-describedby="records-result-hint"
+          class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+        />
+        <p id="records-result-hint" class="text-sm leading-relaxed text-text-secondary">
+          Enter the hemoglobin A1c percentage shown on your lab report, for example, 6.5.
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <label for="records-exam-date" class="inline-flex text-sm font-medium text-text-primary">
+          Exam date
+        </label>
+        <input
+          id="records-exam-date"
+          name="examDate"
+          type="date"
+          required
+          aria-describedby="records-exam-date-hint"
+          class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+        />
+        <p id="records-exam-date-hint" class="text-sm leading-relaxed text-text-secondary">
+          Use the date the exam was performed.
+        </p>
+      </div>
+    </fieldset>
+
+    <div class="space-y-3 border-t border-border-light pt-6">
+      <button
+        type="submit"
+        aria-describedby="records-save-hint"
+        class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-secondary sm:w-auto sm:min-w-44"
+      >
+        Save result
+      </button>
+      <p id="records-save-hint" class="text-sm leading-relaxed text-text-secondary">
+        Saving results is not available yet.
+      </p>
+      <p role="status" aria-atomic="true" class="text-sm leading-relaxed text-text-secondary">
+        @if (saveAttempted()) {
+          Your result has not been saved. You can keep editing the fields.
+        }
+      </p>
+    </div>
+  </form>
+
+  <section aria-labelledby="records-support-title" class="space-y-2 text-sm leading-relaxed">
+    <h2 id="records-support-title" class="font-medium text-text-primary">Keep track over time</h2>
+    <p class="text-text-secondary">
+      Saved results will help you follow changes in your hemoglobin A1c over time. Glicare does not
+      replace medical advice.
+    </p>
+  </section>
+</div>

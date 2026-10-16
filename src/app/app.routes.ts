@@ -17,6 +17,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/pages/dashboard/dashboard').then((m) => m.Dashboard),
       },
+      {
+        path: 'records',
+        loadComponent: () =>
+          import('./features/records/pages/records/records').then((m) => m.Records),
+      },
     ],
   },
   {
