@@ -1,98 +1,312 @@
-<div class="max-w-2xl space-y-8">
-  <header>
-    <h1
-      id="records-title"
-      class="text-2xl font-semibold tracking-tight wrap-break-word sm:text-3xl"
-    >
-      Add exam result
-    </h1>
-    <p
-      id="records-description"
-      class="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base"
-    >
-      Record your hemoglobin A1c result to follow your progress over time.
-    </p>
-  </header>
-
-  <form
-    (submit)="onSubmit($event)"
-    aria-labelledby="records-title"
-    aria-describedby="records-description"
-    class="space-y-6 rounded-xl border border-border bg-surface-raised p-5 sm:p-6"
-  >
-    <fieldset class="min-w-0 space-y-6">
-      <legend class="sr-only">Exam details</legend>
-
-      <dl class="space-y-2 border-b border-border-light pb-5">
-        <dt class="text-sm font-medium text-text-secondary">Exam</dt>
-        <dd class="text-base font-semibold">Hemoglobin A1c</dd>
-      </dl>
-
-      <p class="text-sm text-text-secondary">Both fields are required.</p>
-
-      <div class="space-y-2">
-        <label for="records-result" class="inline-flex text-sm font-medium text-text-primary">
-          Result (%)
-        </label>
-        <input
-          id="records-result"
-          name="result"
-          type="number"
-          inputmode="decimal"
-          step="any"
-          min="0"
-          max="100"
-          required
-          aria-describedby="records-result-hint"
-          class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
-        />
-        <p id="records-result-hint" class="text-sm leading-relaxed text-text-secondary">
-          Enter the hemoglobin A1c percentage shown on your lab report, for example, 6.5.
-        </p>
-      </div>
-
-      <div class="space-y-2">
-        <label for="records-exam-date" class="inline-flex text-sm font-medium text-text-primary">
-          Exam date
-        </label>
-        <input
-          id="records-exam-date"
-          name="examDate"
-          type="date"
-          required
-          aria-describedby="records-exam-date-hint"
-          class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
-        />
-        <p id="records-exam-date-hint" class="text-sm leading-relaxed text-text-secondary">
-          Use the date the exam was performed.
-        </p>
-      </div>
-    </fieldset>
-
-    <div class="space-y-3 border-t border-border-light pt-6">
-      <button
-        type="submit"
-        aria-describedby="records-save-hint"
-        class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-secondary sm:w-auto sm:min-w-44"
-      >
-        Save result
-      </button>
-      <p id="records-save-hint" class="text-sm leading-relaxed text-text-secondary">
-        Saving results is not available yet.
+<div class="max-w-3xl space-y-8 sm:space-y-10">
+  <header class="space-y-5">
+    <div>
+      <h1 id="records-title" class="text-2xl font-semibold tracking-tight sm:text-3xl">Records</h1>
+      <p class="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base">
+        Manage your hemoglobin A1c results over time.
       </p>
-      <p role="status" aria-atomic="true" class="text-sm leading-relaxed text-text-secondary">
-        @if (saveAttempted()) {
-          Your result has not been saved. You can keep editing the fields.
-        }
+      <p id="records-demo-hint" class="mt-3 text-sm leading-relaxed text-text-muted">
+        Demo results · Add, edit or delete results to try it out. Changes reset when you reload.
       </p>
     </div>
-  </form>
+    <button
+      #addButton
+      type="button"
+      (click)="openAddForm()"
+      [attr.aria-expanded]="addFormOpen()"
+      aria-controls="records-add-section"
+      class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover sm:w-auto"
+    >
+      Add new result
+    </button>
+  </header>
 
-  <section aria-labelledby="records-support-title" class="space-y-2 text-sm leading-relaxed">
-    <h2 id="records-support-title" class="font-medium text-text-primary">Keep track over time</h2>
+  <section
+    id="records-add-section"
+    [hidden]="!addFormOpen()"
+    aria-labelledby="records-add-title"
+    class="rounded-xl border border-border bg-surface-raised p-5 sm:p-6"
+  >
+    @if (addFormOpen()) {
+      <h2 id="records-add-title" class="text-lg font-semibold tracking-tight">Add exam result</h2>
+      <form
+        #addForm
+        (submit)="saveResult($event, addForm, addButton)"
+        aria-labelledby="records-add-title"
+        aria-describedby="records-demo-hint"
+        class="mt-5 space-y-6"
+      >
+        <fieldset class="min-w-0 space-y-5">
+          <legend class="sr-only">Exam details</legend>
+          <dl class="space-y-2 border-b border-border-light pb-5">
+            <dt class="text-sm font-medium text-text-secondary">Exam</dt>
+            <dd class="text-base font-semibold">Hemoglobin A1c</dd>
+          </dl>
+          <p class="text-sm text-text-secondary">Both fields are required.</p>
+          <div class="space-y-2">
+            <label for="records-result" class="inline-flex text-sm font-medium">Result (%)</label>
+            <input
+              #resultInput
+              id="records-result"
+              name="result"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              min="0"
+              max="100"
+              required
+              aria-describedby="records-result-hint"
+              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+            />
+            <p id="records-result-hint" class="text-sm leading-relaxed text-text-secondary">
+              Enter the hemoglobin A1c percentage shown on your lab report, for example, 6.5.
+            </p>
+          </div>
+          <div class="space-y-2">
+            <label for="records-exam-date" class="inline-flex text-sm font-medium">Exam date</label>
+            <input
+              id="records-exam-date"
+              name="examDate"
+              type="date"
+              required
+              aria-describedby="records-exam-date-hint"
+              class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+            />
+            <p id="records-exam-date-hint" class="text-sm leading-relaxed text-text-secondary">
+              Use the date the exam was performed.
+            </p>
+          </div>
+        </fieldset>
+        <div class="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row">
+          <button
+            type="submit"
+            class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-secondary"
+          >
+            Save result
+          </button>
+          <button
+            type="button"
+            (click)="closeForm(addButton)"
+            class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary hover:bg-surface-hover"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+
+  <p
+    role="status"
+    aria-atomic="true"
+    [class.sr-only]="!feedback()"
+    class="text-sm leading-relaxed text-text-secondary"
+  >
+    {{ feedback() }}
+  </p>
+
+  <section aria-labelledby="records-results-title">
+    <h2
+      #resultsHeading
+      id="records-results-title"
+      tabindex="-1"
+      class="text-lg font-semibold tracking-tight"
+    >
+      Your results
+    </h2>
+    @if (sortedResults().length) {
+      <ul class="mt-4 divide-y divide-border-light border-y border-border-light">
+        @for (record of sortedResults(); track record.id) {
+          <li class="py-5">
+            <div
+              class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+            >
+              <div class="flex min-w-0 items-center justify-between gap-4 sm:flex-1">
+                <div class="min-w-0">
+                  <h3 [id]="'records-date-' + record.id" class="text-base font-medium">
+                    <time [attr.datetime]="record.examDate">{{
+                      record.examDate | date: 'MMM dd, yyyy'
+                    }}</time>
+                  </h3>
+                  <p class="mt-1 text-sm text-text-secondary">Hemoglobin A1c</p>
+                </div>
+                <p class="shrink-0 text-xl font-semibold tracking-tight tabular-nums">
+                  {{ record.result }}%
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  #editButton
+                  type="button"
+                  (click)="openEditForm(record.id)"
+                  [attr.aria-expanded]="editingRecordId() === record.id"
+                  [attr.aria-controls]="'records-edit-section-' + record.id"
+                  class="min-h-12 flex-1 cursor-pointer rounded-lg border border-border px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover sm:flex-none"
+                >
+                  Edit<span class="sr-only">
+                    result of {{ record.result }}% from
+                    {{ record.examDate | date: 'MMM dd, yyyy' }}</span
+                  >
+                </button>
+                <button
+                  type="button"
+                  (click)="requestDelete(record.id, deleteDialog)"
+                  aria-haspopup="dialog"
+                  class="min-h-12 flex-1 cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-error hover:bg-surface-hover sm:flex-none"
+                >
+                  Delete<span class="sr-only">
+                    result of {{ record.result }}% from
+                    {{ record.examDate | date: 'MMM dd, yyyy' }}</span
+                  >
+                </button>
+              </div>
+            </div>
+
+            <div
+              [id]="'records-edit-section-' + record.id"
+              [hidden]="editingRecordId() !== record.id"
+            >
+              @if (editingRecordId() === record.id) {
+                <form
+                  #editForm
+                  (submit)="saveResult($event, editForm, editButton, record.id)"
+                  [attr.aria-labelledby]="
+                    'records-edit-title-' + record.id + ' records-date-' + record.id
+                  "
+                  aria-describedby="records-demo-hint"
+                  class="mt-4 space-y-5 rounded-lg border border-border bg-surface-light p-4 sm:p-5"
+                >
+                  <h4 [id]="'records-edit-title-' + record.id" class="font-medium">Edit result</h4>
+                  <fieldset class="min-w-0 space-y-5">
+                    <legend class="sr-only">
+                      Hemoglobin A1c result · Both fields are required
+                    </legend>
+                    <p class="text-sm text-text-secondary">Both fields are required.</p>
+                    <div class="space-y-2">
+                      <label
+                        [for]="'records-edit-result-' + record.id"
+                        class="inline-flex text-sm font-medium"
+                        >Result (%)</label
+                      >
+                      <input
+                        #resultInput
+                        [id]="'records-edit-result-' + record.id"
+                        name="result"
+                        type="number"
+                        inputmode="decimal"
+                        step="any"
+                        min="0"
+                        max="100"
+                        required
+                        [value]="record.result"
+                        [attr.aria-describedby]="'records-edit-result-hint-' + record.id"
+                        class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+                      />
+                      <p
+                        [id]="'records-edit-result-hint-' + record.id"
+                        class="text-sm leading-relaxed text-text-secondary"
+                      >
+                        Enter the hemoglobin A1c percentage shown on your lab report, for example,
+                        6.5.
+                      </p>
+                    </div>
+                    <div class="space-y-2">
+                      <label
+                        [for]="'records-edit-date-' + record.id"
+                        class="inline-flex text-sm font-medium"
+                        >Exam date</label
+                      >
+                      <input
+                        [id]="'records-edit-date-' + record.id"
+                        name="examDate"
+                        type="date"
+                        required
+                        [value]="record.examDate"
+                        [attr.aria-describedby]="'records-edit-date-hint-' + record.id"
+                        class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+                      />
+                      <p
+                        [id]="'records-edit-date-hint-' + record.id"
+                        class="text-sm leading-relaxed text-text-secondary"
+                      >
+                        Use the date the exam was performed.
+                      </p>
+                    </div>
+                  </fieldset>
+                  <div class="flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="submit"
+                      class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover"
+                    >
+                      Save changes
+                    </button>
+                    <button
+                      type="button"
+                      (click)="closeForm(editButton)"
+                      class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary hover:bg-surface-hover"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="mt-4 space-y-2 border-y border-border-light py-8">
+        <p class="font-medium">No exam results yet.</p>
+        <p class="text-sm leading-relaxed text-text-secondary">
+          Add your first hemoglobin A1c result to start tracking your progress.
+        </p>
+      </div>
+    }
+  </section>
+
+  <section
+    aria-labelledby="records-support-title"
+    class="space-y-2 border-t border-border pt-6 text-sm leading-relaxed"
+  >
+    <h2 id="records-support-title" class="font-medium">Keep track over time</h2>
     <p class="text-text-secondary">
-      Saved results will help you follow changes in your hemoglobin A1c over time. Glicare does not
+      Your results help you follow changes in your hemoglobin A1c over time. Glicare does not
       replace medical advice.
     </p>
   </section>
+
+  <dialog
+    #deleteDialog
+    (close)="deletingRecordId.set(null)"
+    aria-labelledby="records-delete-title"
+    aria-describedby="records-delete-description"
+    class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-xl border border-border bg-surface-raised p-5 text-text-primary backdrop:bg-overlay sm:p-6"
+  >
+    <h2 id="records-delete-title" class="text-lg font-semibold tracking-tight">Delete result?</h2>
+    <p id="records-delete-description" class="mt-3 text-sm leading-relaxed text-text-secondary">
+      @if (resultToDelete(); as record) {
+        Delete the hemoglobin A1c result of
+        <strong class="font-semibold text-text-primary">{{ record.result }}%</strong> from
+        <time [attr.datetime]="record.examDate">{{ record.examDate | date: 'MMM dd, yyyy' }}</time
+        >? This action cannot be undone within this demo.
+      }
+    </p>
+    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <button
+        type="button"
+        autofocus
+        (click)="deleteDialog.close()"
+        class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary hover:bg-surface-hover"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="confirmDelete(deleteDialog, resultsHeading)"
+        class="min-h-12 cursor-pointer rounded-lg bg-error px-5 py-3 text-base font-semibold text-text-inverse hover:underline hover:underline-offset-4"
+      >
+        Delete
+      </button>
+    </div>
+  </dialog>
 </div>
