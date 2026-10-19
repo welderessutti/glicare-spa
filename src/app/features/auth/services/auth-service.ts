@@ -13,10 +13,10 @@ import { ResendVerificationRequest } from '../models/requests/resend-verificatio
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = API_URL;
-  private readonly slug = '/auth';
+  private readonly slug = 'auth';
 
   public register(request: RegisterRequest): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}${this.slug}/register`, request);
+    return this.http.post<void>(`${this.apiUrl}/${this.slug}/register`, request);
   }
 
   public login(request: LoginRequest): Observable<SessionAuthenticatedUser> {

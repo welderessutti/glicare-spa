@@ -9,7 +9,7 @@ import { SessionStatus } from '../../models/session-status';
 export class SessionService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = API_URL;
-  private readonly slug = '/session';
+  private readonly slug = 'session';
   private readonly _user = signal<SessionAuthenticatedUser | null>(null);
   private readonly _status = signal<SessionStatus>('checking');
   public readonly user = this._user.asReadonly();
@@ -27,7 +27,7 @@ export class SessionService {
   }
 
   public getCurrentSessionAuthenticatedUser(): Observable<SessionAuthenticatedUser> {
-    return this.http.get<SessionAuthenticatedUser>(`${this.apiUrl}${this.slug}/me`);
+    return this.http.get<SessionAuthenticatedUser>(`${this.apiUrl}/${this.slug}/me`);
   }
 
   public restoreSession(): Observable<void> {

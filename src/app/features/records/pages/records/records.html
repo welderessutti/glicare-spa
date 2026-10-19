@@ -21,6 +21,7 @@
     </button>
   </header>
 
+<!--  TODO: VERIFICAR NECESSIDADE DE USAR HIDDEN + @IF, AQUI TEM REDUNDÂNCIA! -->
   <section
     id="records-add-section"
     [hidden]="!addFormOpen()"
@@ -162,6 +163,7 @@
               </div>
             </div>
 
+            <!--  TODO: VERIFICAR NECESSIDADE DE USAR HIDDEN + @IF, AQUI TEM REDUNDÂNCIA! -->
             <div
               [id]="'records-edit-section-' + record.id"
               [hidden]="editingRecordId() !== record.id"
