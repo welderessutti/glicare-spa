@@ -1,7 +1,7 @@
 export interface ExamResult {
   id: string;
   examRecordId: string;
-  field: string;
+  label: string;
   value: number;
   unit: string;
 }

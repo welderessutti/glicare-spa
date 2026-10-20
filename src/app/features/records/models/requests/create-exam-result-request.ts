@@ -1,4 +1,4 @@
 export interface CreateExamResultRequest {
-  field: string;
+  label: string;
   value: number;
 }
