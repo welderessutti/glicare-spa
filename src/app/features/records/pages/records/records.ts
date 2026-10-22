@@ -1,112 +1,227 @@
 import { DatePipe } from '@angular/common';
-import {
-  afterNextRender,
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  Injector,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { form, FormField, FormRoot, required, validate } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
+import { ExamRecord } from '../../models/exam-record';
+import { ExamTypeCode, EXAM_UI_CONFIG } from '../../models/exam-type-code';
+import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
+import { UpdateExamRecordRequest } from '../../models/requests/update-exam-record-request';
+import { ExamRecordsService } from '../../services/exam-records-service';
 
 @Component({
-  imports: [DatePipe],
+  imports: [DatePipe, FormField, FormRoot],
   selector: 'app-records',
   styleUrl: './records.css',
   templateUrl: './records.html',
 })
-export class Records {
-  private readonly injector = inject(Injector);
-  private readonly resultInput = viewChild<ElementRef<HTMLInputElement>>('resultInput');
-  private nextRecordId = 4;
+export class Records implements OnInit {
+  private readonly examRecordsService = inject(ExamRecordsService);
+  private readonly createExamRecordModel = signal<{
+    examTypeCode: ExamTypeCode | '';
+    value: number | null;
+    examDate: string;
+  }>({ examTypeCode: '', value: null, examDate: '' });
+  private readonly updateExamRecordModel = signal<{ value: number | null; examDate: string }>({
+    value: null,
+    examDate: '',
+  });
 
-  protected readonly results = signal([
-    { id: 1, result: 6.5, examDate: '2026-10-10' },
-    { id: 2, result: 6.8, examDate: '2026-07-08' },
-    { id: 3, result: 7.1, examDate: '2026-04-04' },
-  ]);
-  protected readonly addFormOpen = signal(false);
-  protected readonly editingRecordId = signal<number | null>(null);
-  protected readonly deletingRecordId = signal<number | null>(null);
-  protected readonly feedback = signal('');
-  protected readonly sortedResults = computed(() =>
-    [...this.results()].sort((a, b) => b.examDate.localeCompare(a.examDate)),
+  protected readonly examUi = EXAM_UI_CONFIG;
+  protected readonly examTypes = Object.entries(EXAM_UI_CONFIG);
+  protected readonly records = signal<ExamRecord[]>([]);
+  protected readonly loadingExamRecords = signal(false);
+  protected readonly loadExamRecordsErrorMessage = signal('');
+  protected readonly errorMessage = signal('');
+  protected readonly createExamRecordFormOpen = signal(false);
+  protected readonly editingExamRecord = signal<ExamRecord | null>(null);
+  protected readonly examRecordToDelete = signal<ExamRecord | null>(null);
+  protected readonly deleting = signal(false);
+  protected readonly createUi = computed(() => {
+    const code = this.createExamRecordModel().examTypeCode;
+    return code ? EXAM_UI_CONFIG[code] : null;
+  });
+
+  protected readonly examTypeCodeInvalid = computed(
+    () =>
+      this.createExamRecordForm.examTypeCode().touched() &&
+      this.createExamRecordForm.examTypeCode().invalid(),
   );
-  protected readonly resultToDelete = computed(() =>
-    this.results().find((record) => record.id === this.deletingRecordId()),
+
+  protected readonly examValueInvalid = computed(
+    () =>
+      this.createExamRecordForm.value().touched() && this.createExamRecordForm.value().invalid(),
   );
 
-  protected openAddForm(): void {
-    this.editingRecordId.set(null);
-    this.addFormOpen.set(true);
-    this.feedback.set('');
-    this.focusResultInput();
+  protected readonly examDateInvalid = computed(
+    () =>
+      this.createExamRecordForm.examDate().touched() &&
+      this.createExamRecordForm.examDate().invalid(),
+  );
+
+  protected readonly examResultValueInvalid = computed(
+    () => this.editExamRecordForm.value().touched() && this.editExamRecordForm.value().invalid(),
+  );
+
+  protected readonly examRecordDateInvalid = computed(
+    () =>
+      this.editExamRecordForm.examDate().touched() && this.editExamRecordForm.examDate().invalid(),
+  );
+
+  protected readonly createExamRecordForm = form(
+    this.createExamRecordModel,
+    (path) => {
+      required(path.examTypeCode, { message: 'Choose an exam type.' });
+      required(path.value, { message: 'Enter the result.' });
+      validate(path.value, ({ value }) => {
+        const result = value();
+        const examType = this.createExamRecordModel().examTypeCode;
+
+        if (result === null) {
+          return null;
+        }
+
+        if (result <= 0) {
+          return {
+            kind: 'positive',
+            message: 'Enter a value greater than zero.',
+          };
+        }
+
+        if (examType === 'GLU' && !Number.isInteger(result)) {
+          return {
+            kind: 'integer',
+            message: 'Blood glucose must be entered as a whole number.',
+          };
+        }
+
+        if (examType === 'HBA1C' && !Number.isInteger(result * 10)) {
+          return {
+            kind: 'decimalPlaces',
+            message: 'Hemoglobin A1c can have one decimal place.',
+          };
+        }
+
+        return null;
+      });
+      required(path.examDate, { message: 'Enter the exam date.' });
+    },
+    {
+      submission: {
+        action: async (field) => {
+          const { examTypeCode, value, examDate } = field().value();
+          if (!examTypeCode || value === null) return;
+          this.errorMessage.set('');
+          const request: CreateExamRecordRequest = {
+            examTypeCode,
+            examDate,
+            examResults: [{ label: EXAM_UI_CONFIG[examTypeCode].resultLabel, value }],
+          };
+          try {
+            const record = await firstValueFrom(this.examRecordsService.create(request));
+            this.records.update((records) => [record, ...records]);
+            this.createExamRecordFormOpen.set(false);
+            this.createExamRecordForm().reset({ examTypeCode: '', value: null, examDate: '' });
+          } catch {
+            this.errorMessage.set('Unable to save record.');
+          }
+        },
+        onInvalid: (field) => field().errorSummary()[0]?.fieldTree().focusBoundControl(),
+      },
+    },
+  );
+
+  protected readonly editExamRecordForm = form(
+    this.updateExamRecordModel,
+    (path) => {
+      required(path.value, { message: 'Enter the result.' });
+      required(path.examDate, { message: 'Enter the exam date.' });
+    },
+    {
+      submission: {
+        action: async (field) => {
+          const record = this.editingExamRecord();
+          const { value, examDate } = field().value();
+          if (!record || value === null) return;
+          this.errorMessage.set('');
+          const request: UpdateExamRecordRequest = {
+            examDate,
+            examResults: [{ id: record.examResults[0].id, value }],
+          };
+          try {
+            const updated = await firstValueFrom(
+              this.examRecordsService.updateById(record.id, request),
+            );
+            this.records.update((records) =>
+              records.map((current) => (current.id === updated.id ? updated : current)),
+            );
+            this.editingExamRecord.set(null);
+            this.editExamRecordForm().reset({ value: null, examDate: '' });
+          } catch {
+            this.errorMessage.set('Unable to update record.');
+          }
+        },
+        onInvalid: (field) => field().errorSummary()[0]?.fieldTree().focusBoundControl(),
+      },
+    },
+  );
+
+  ngOnInit(): void {
+    this.loadRecords();
   }
 
-  protected openEditForm(id: number): void {
-    this.addFormOpen.set(false);
-    this.editingRecordId.set(id);
-    this.feedback.set('');
-    this.focusResultInput();
+  protected loadRecords(): void {
+    this.loadingExamRecords.set(true);
+    this.loadExamRecordsErrorMessage.set('');
+    this.examRecordsService.getAll().subscribe({
+      next: (records) => {
+        this.records.set(records);
+        this.loadingExamRecords.set(false);
+      },
+      error: () => {
+        this.loadExamRecordsErrorMessage.set('Unable to load records.');
+        this.loadingExamRecords.set(false);
+      },
+    });
   }
 
-  protected closeForm(trigger: HTMLElement): void {
-    this.addFormOpen.set(false);
-    this.editingRecordId.set(null);
-    afterNextRender({ write: () => trigger.focus() }, { injector: this.injector });
+  protected openCreateExamRecordForm(): void {
+    this.createExamRecordForm().reset({ examTypeCode: '', value: null, examDate: '' });
+    this.errorMessage.set('');
+    this.createExamRecordFormOpen.set(true);
   }
 
-// TODO: VERIFICAR O USO DO FORMULÁRIO AQUI, USAR SIGNAL FORM?
-  protected saveResult(
-    event: Event,
-    form: HTMLFormElement,
-    trigger: HTMLElement,
-    recordId?: number,
-  ): void {
-    event.preventDefault();
-    if (!form.reportValidity()) return;
-
-    const fields = new FormData(form);
-    const record = {
-      id: recordId ?? this.nextRecordId++,
-      result: Number(fields.get('result')),
-      examDate: String(fields.get('examDate')),
-    };
-
-    this.results.update((results) =>
-      recordId === undefined
-        ? [...results, record]
-        : results.map((current) => (current.id === recordId ? record : current)),
-    );
-    this.feedback.set(
-      recordId === undefined
-        ? 'Result added to this demo. Changes reset when you reload.'
-        : 'Result updated in this demo. Changes reset when you reload.',
-    );
-    this.closeForm(trigger);
+  protected openEditExamRecordForm(record: ExamRecord): void {
+    this.editExamRecordForm().reset({
+      value: record.examResults[0].value,
+      examDate: record.examDate,
+    });
+    this.errorMessage.set('');
+    this.editingExamRecord.set(record);
   }
 
-  protected requestDelete(id: number, dialog: HTMLDialogElement): void {
-    this.deletingRecordId.set(id);
-    afterNextRender({ write: () => dialog.showModal() }, { injector: this.injector });
+  protected requestDeleteExamRecord(record: ExamRecord, dialog: HTMLDialogElement): void {
+    this.examRecordToDelete.set(record);
+    this.errorMessage.set('');
+    dialog.showModal();
   }
 
-  protected confirmDelete(dialog: HTMLDialogElement, resultsHeading: HTMLElement): void {
-    const id = this.deletingRecordId();
-    if (id === null) return;
-
-    this.results.update((results) => results.filter((record) => record.id !== id));
-    if (this.editingRecordId() === id) this.editingRecordId.set(null);
-    this.feedback.set('Result deleted from this demo. Changes reset when you reload.');
-    dialog.close();
-    afterNextRender({ write: () => resultsHeading.focus() }, { injector: this.injector });
-  }
-
-  private focusResultInput(): void {
-    afterNextRender(
-      { write: () => this.resultInput()?.nativeElement.focus() },
-      { injector: this.injector },
-    );
+  protected confirmDelete(dialog: HTMLDialogElement): void {
+    const record = this.examRecordToDelete();
+    if (!record || this.deleting()) return;
+    this.deleting.set(true);
+    this.errorMessage.set('');
+    this.examRecordsService.deleteById(record.id).subscribe({
+      next: () => {
+        this.records.update((records) => records.filter((current) => current.id !== record.id));
+        if (this.editingExamRecord()?.id === record.id) this.editingExamRecord.set(null);
+        this.deleting.set(false);
+        dialog.close();
+        this.examRecordToDelete.set(null);
+      },
+      error: () => {
+        this.deleting.set(false);
+        this.errorMessage.set('Unable to delete record.');
+      },
+    });
   }
 }

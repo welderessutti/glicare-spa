@@ -1,123 +1,199 @@
 <div class="max-w-3xl space-y-8 sm:space-y-10">
   <header class="space-y-5">
     <div>
-      <h1 id="records-title" class="text-2xl font-semibold tracking-tight sm:text-3xl">Records</h1>
+      <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Records</h1>
       <p class="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base">
-        Manage your hemoglobin A1c results over time.
-      </p>
-      <p id="records-demo-hint" class="mt-3 text-sm leading-relaxed text-text-muted">
-        Demo results · Add, edit or delete results to try it out. Changes reset when you reload.
+        Manage your exam results over time.
       </p>
     </div>
-    <button
-      #addButton
-      type="button"
-      (click)="openAddForm()"
-      [attr.aria-expanded]="addFormOpen()"
-      aria-controls="records-add-section"
-      class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover sm:w-auto"
-    >
-      Add new result
-    </button>
+    @if (!createExamRecordFormOpen()) {
+      <button
+        #addButton
+        type="button"
+        (click)="openCreateExamRecordForm()"
+        [disabled]="createExamRecordForm().submitting()"
+        [attr.aria-expanded]="createExamRecordFormOpen()"
+        [attr.aria-controls]="createExamRecordFormOpen() ? 'records-add-section' : null"
+        class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait sm:w-auto"
+      >
+        Add record
+      </button>
+    }
   </header>
 
-<!--  TODO: VERIFICAR NECESSIDADE DE USAR HIDDEN + @IF, AQUI TEM REDUNDÂNCIA! -->
-  <section
-    id="records-add-section"
-    [hidden]="!addFormOpen()"
-    aria-labelledby="records-add-title"
-    class="rounded-xl border border-border bg-surface-raised p-5 sm:p-6"
-  >
-    @if (addFormOpen()) {
-      <h2 id="records-add-title" class="text-lg font-semibold tracking-tight">Add exam result</h2>
+  @if (errorMessage() && !examRecordToDelete()) {
+    <p role="alert" class="text-sm text-error">{{ errorMessage() }}</p>
+  }
+
+  @if (createExamRecordFormOpen()) {
+    <section
+      id="records-add-section"
+      aria-labelledby="records-add-title"
+      class="rounded-xl border border-border bg-surface-raised p-5 sm:p-6"
+    >
+      <h2 id="records-add-title" class="text-lg font-semibold tracking-tight">Add exam record</h2>
       <form
-        #addForm
-        (submit)="saveResult($event, addForm, addButton)"
+        [formRoot]="createExamRecordForm"
+        [attr.aria-busy]="createExamRecordForm().submitting()"
         aria-labelledby="records-add-title"
-        aria-describedby="records-demo-hint"
         class="mt-5 space-y-6"
       >
-        <fieldset class="min-w-0 space-y-5">
+        <fieldset [disabled]="createExamRecordForm().submitting()" class="min-w-0 space-y-5">
           <legend class="sr-only">Exam details</legend>
-          <dl class="space-y-2 border-b border-border-light pb-5">
-            <dt class="text-sm font-medium text-text-secondary">Exam</dt>
-            <dd class="text-base font-semibold">Hemoglobin A1c</dd>
-          </dl>
-          <p class="text-sm text-text-secondary">Both fields are required.</p>
           <div class="space-y-2">
-            <label for="records-result" class="inline-flex text-sm font-medium">Result (%)</label>
+            <label for="records-exam-type" class="inline-flex text-sm font-medium">Exam type</label>
+            <select
+              id="records-exam-type"
+              [formField]="createExamRecordForm.examTypeCode"
+              [attr.aria-invalid]="examTypeCodeInvalid()"
+              [attr.aria-describedby]="examTypeCodeInvalid() ? 'records-type-error' : null"
+              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+            >
+              <option value="">Choose an exam type</option>
+              @for (type of examTypes; track type[0]) {
+                <option [value]="type[0]">{{ type[1].label }}</option>
+              }
+            </select>
+            @if (examTypeCodeInvalid()) {
+              <ul id="records-type-error" class="text-sm text-error">
+                @for (error of createExamRecordForm.examTypeCode().errors(); track error.kind) {
+                  <li>{{ error.message }}</li>
+                }
+              </ul>
+            }
+          </div>
+          <div class="space-y-2">
+            <label for="records-result" class="inline-flex text-sm font-medium"
+              >Result
+              @if (createUi(); as ui) {
+                ({{ ui.unit }})
+              }
+            </label>
             <input
-              #resultInput
               id="records-result"
-              name="result"
+              [formField]="createExamRecordForm.value"
               type="number"
               inputmode="decimal"
-              step="any"
-              min="0"
-              max="100"
-              required
-              aria-describedby="records-result-hint"
-              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+              [step]="createUi()?.step ?? 1"
+              [attr.aria-invalid]="examValueInvalid()"
+              [attr.aria-describedby]="examValueInvalid() ? 'records-result-error' : null"
+              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
             />
-            <p id="records-result-hint" class="text-sm leading-relaxed text-text-secondary">
-              Enter the hemoglobin A1c percentage shown on your lab report, for example, 6.5.
-            </p>
+            @if (examValueInvalid()) {
+              <ul id="records-result-error" class="text-sm text-error">
+                @for (error of createExamRecordForm.value().errors(); track error.kind) {
+                  <li>{{ error.message ?? 'Enter a valid number.' }}</li>
+                }
+              </ul>
+            }
           </div>
           <div class="space-y-2">
             <label for="records-exam-date" class="inline-flex text-sm font-medium">Exam date</label>
             <input
               id="records-exam-date"
-              name="examDate"
+              [formField]="createExamRecordForm.examDate"
               type="date"
-              required
-              aria-describedby="records-exam-date-hint"
-              class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+              [attr.aria-invalid]="examDateInvalid()"
+              [attr.aria-describedby]="examDateInvalid() ? 'records-date-error' : null"
+              class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
             />
-            <p id="records-exam-date-hint" class="text-sm leading-relaxed text-text-secondary">
-              Use the date the exam was performed.
-            </p>
+            @if (examDateInvalid()) {
+              <ul id="records-date-error" class="text-sm text-error">
+                @for (error of createExamRecordForm.examDate().errors(); track error.kind) {
+                  <li>{{ error.message ?? 'Enter a valid exam date.' }}</li>
+                }
+              </ul>
+            }
           </div>
         </fieldset>
         <div class="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row">
           <button
             type="submit"
-            class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-secondary"
+            [disabled]="createExamRecordForm().submitting()"
+            class="flex gap-1 justify-center items-center min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
           >
-            Save result
+            @if (createExamRecordForm().submitting()) {
+              <svg
+                class="size-5 animate-spin motion-reduce:animate-none"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="opacity-25"
+                />
+                <path
+                  d="M12 3a9 9 0 0 1 9 9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <span>Saving…</span>
+            } @else {
+              <span>Save</span>
+            }
           </button>
           <button
             type="button"
-            (click)="closeForm(addButton)"
-            class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary hover:bg-surface-hover"
+            [disabled]="createExamRecordForm().submitting()"
+            (click)="createExamRecordFormOpen.set(false)"
+            class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
           >
             Cancel
           </button>
         </div>
       </form>
+    </section>
+  }
+
+  <section aria-labelledby="records-results-title" [attr.aria-busy]="loadingExamRecords()">
+    <h2 id="records-results-title" class="text-lg font-semibold tracking-tight">Your results</h2>
+    @if (loadingExamRecords()) {
+      <p role="status" class="flex gap-1 mt-4 text-sm text-text-secondary">
+        <svg
+          class="size-5 animate-spin motion-reduce:animate-none"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
+          <path
+            d="M12 3a9 9 0 0 1 9 9"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /></svg
+        ><span>Loading your records…</span>
+      </p>
     }
-  </section>
-
-  <p
-    role="status"
-    aria-atomic="true"
-    [class.sr-only]="!feedback()"
-    class="text-sm leading-relaxed text-text-secondary"
-  >
-    {{ feedback() }}
-  </p>
-
-  <section aria-labelledby="records-results-title">
-    <h2
-      #resultsHeading
-      id="records-results-title"
-      tabindex="-1"
-      class="text-lg font-semibold tracking-tight"
-    >
-      Your results
-    </h2>
-    @if (sortedResults().length) {
+    @if (loadExamRecordsErrorMessage()) {
+      <div class="mt-4 space-y-3">
+        <div
+          role="alert"
+          class="flex flex-col items-center rounded-lg border border-error bg-surface-light px-4 py-3 text-sm text-error"
+        >
+          <p class="font-semibold">We couldn't load your exam records</p>
+          <p class="mt-1">{{ loadExamRecordsErrorMessage() }}</p>
+        </div>
+        <button
+          type="button"
+          (click)="loadRecords()"
+          [disabled]="loadingExamRecords()"
+          class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait sm:w-auto"
+        >
+          Try again
+        </button>
+      </div>
+    }
+    @if (records().length) {
       <ul class="mt-4 divide-y divide-border-light border-y border-border-light">
-        @for (record of sortedResults(); track record.id) {
+        @for (record of records(); track record.id) {
           <li class="py-5">
             <div
               class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
@@ -129,138 +205,167 @@
                       record.examDate | date: 'MMM dd, yyyy'
                     }}</time>
                   </h3>
-                  <p class="mt-1 text-sm text-text-secondary">Hemoglobin A1c</p>
+                  <p class="mt-1 text-sm text-text-secondary">{{ record.examType.name }}</p>
                 </div>
-                <p class="shrink-0 text-xl font-semibold tracking-tight tabular-nums">
-                  {{ record.result }}%
+                <p
+                  class="flex shrink-0 items-baseline gap-1 text-xl font-semibold tracking-tight tabular-nums"
+                >
+                  {{ record.examResults[0].value
+                  }}<span class="text-sm font-medium text-text-secondary">{{
+                    record.examResults[0].unit
+                  }}</span>
                 </p>
               </div>
               <div class="flex gap-2">
                 <button
                   #editButton
                   type="button"
-                  (click)="openEditForm(record.id)"
-                  [attr.aria-expanded]="editingRecordId() === record.id"
-                  [attr.aria-controls]="'records-edit-section-' + record.id"
-                  class="min-h-12 flex-1 cursor-pointer rounded-lg border border-border px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover sm:flex-none"
+                  (click)="openEditExamRecordForm(record)"
+                  [disabled]="editExamRecordForm().submitting()"
+                  [attr.aria-expanded]="editingExamRecord()?.id === record.id"
+                  [attr.aria-controls]="
+                    editingExamRecord()?.id === record.id
+                      ? 'records-edit-section-' + record.id
+                      : null
+                  "
+                  class="min-h-12 flex-1 cursor-pointer rounded-lg border border-border px-4 py-3 text-sm font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait sm:flex-none"
                 >
                   Edit<span class="sr-only">
-                    result of {{ record.result }}% from
+                    {{ record.examType.name }} record from
                     {{ record.examDate | date: 'MMM dd, yyyy' }}</span
                   >
                 </button>
                 <button
                   type="button"
-                  (click)="requestDelete(record.id, deleteDialog)"
+                  (click)="requestDeleteExamRecord(record, deleteDialog)"
+                  [disabled]="
+                    editingExamRecord()?.id === record.id && editExamRecordForm().submitting()
+                  "
                   aria-haspopup="dialog"
-                  class="min-h-12 flex-1 cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-error hover:bg-surface-hover sm:flex-none"
+                  class="min-h-12 flex-1 cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-error enabled:hover:bg-surface-hover disabled:cursor-wait sm:flex-none"
                 >
                   Delete<span class="sr-only">
-                    result of {{ record.result }}% from
+                    {{ record.examType.name }} record from
                     {{ record.examDate | date: 'MMM dd, yyyy' }}</span
                   >
                 </button>
               </div>
             </div>
-
-            <!--  TODO: VERIFICAR NECESSIDADE DE USAR HIDDEN + @IF, AQUI TEM REDUNDÂNCIA! -->
-            <div
-              [id]="'records-edit-section-' + record.id"
-              [hidden]="editingRecordId() !== record.id"
-            >
-              @if (editingRecordId() === record.id) {
-                <form
-                  #editForm
-                  (submit)="saveResult($event, editForm, editButton, record.id)"
-                  [attr.aria-labelledby]="
-                    'records-edit-title-' + record.id + ' records-date-' + record.id
-                  "
-                  aria-describedby="records-demo-hint"
-                  class="mt-4 space-y-5 rounded-lg border border-border bg-surface-light p-4 sm:p-5"
-                >
-                  <h4 [id]="'records-edit-title-' + record.id" class="font-medium">Edit result</h4>
-                  <fieldset class="min-w-0 space-y-5">
-                    <legend class="sr-only">
-                      Hemoglobin A1c result · Both fields are required
-                    </legend>
-                    <p class="text-sm text-text-secondary">Both fields are required.</p>
-                    <div class="space-y-2">
-                      <label
-                        [for]="'records-edit-result-' + record.id"
-                        class="inline-flex text-sm font-medium"
-                        >Result (%)</label
-                      >
-                      <input
-                        #resultInput
-                        [id]="'records-edit-result-' + record.id"
-                        name="result"
-                        type="number"
-                        inputmode="decimal"
-                        step="any"
-                        min="0"
-                        max="100"
-                        required
-                        [value]="record.result"
-                        [attr.aria-describedby]="'records-edit-result-hint-' + record.id"
-                        class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
-                      />
-                      <p
-                        [id]="'records-edit-result-hint-' + record.id"
-                        class="text-sm leading-relaxed text-text-secondary"
-                      >
-                        Enter the hemoglobin A1c percentage shown on your lab report, for example,
-                        6.5.
-                      </p>
-                    </div>
-                    <div class="space-y-2">
-                      <label
-                        [for]="'records-edit-date-' + record.id"
-                        class="inline-flex text-sm font-medium"
-                        >Exam date</label
-                      >
-                      <input
-                        [id]="'records-edit-date-' + record.id"
-                        name="examDate"
-                        type="date"
-                        required
-                        [value]="record.examDate"
-                        [attr.aria-describedby]="'records-edit-date-hint-' + record.id"
-                        class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
-                      />
-                      <p
-                        [id]="'records-edit-date-hint-' + record.id"
-                        class="text-sm leading-relaxed text-text-secondary"
-                      >
-                        Use the date the exam was performed.
-                      </p>
-                    </div>
-                  </fieldset>
-                  <div class="flex flex-col gap-3 sm:flex-row">
-                    <button
-                      type="submit"
-                      class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover"
+            @if (editingExamRecord()?.id === record.id) {
+              <form
+                [id]="'records-edit-section-' + record.id"
+                [formRoot]="editExamRecordForm"
+                [attr.aria-busy]="editExamRecordForm().submitting()"
+                [attr.aria-labelledby]="
+                  'records-edit-title-' + record.id + ' records-date-' + record.id
+                "
+                class="mt-4 space-y-5 rounded-lg border border-border bg-surface-light p-4 sm:p-5"
+              >
+                <h4 [id]="'records-edit-title-' + record.id" class="font-medium">Edit result</h4>
+                <fieldset [disabled]="editExamRecordForm().submitting()" class="min-w-0 space-y-5">
+                  <legend class="sr-only">{{ record.examType.name }} result</legend>
+                  <div class="space-y-2">
+                    <label
+                      [for]="'records-edit-result-' + record.id"
+                      class="inline-flex text-sm font-medium"
+                      >Result ({{ record.examResults[0].unit }})</label
                     >
-                      Save changes
-                    </button>
-                    <button
-                      type="button"
-                      (click)="closeForm(editButton)"
-                      class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary hover:bg-surface-hover"
-                    >
-                      Cancel
-                    </button>
+                    <input
+                      [id]="'records-edit-result-' + record.id"
+                      [formField]="editExamRecordForm.value"
+                      type="number"
+                      inputmode="decimal"
+                      step="any"
+                      [attr.aria-invalid]="examResultValueInvalid()"
+                      [attr.aria-describedby]="
+                        examResultValueInvalid() ? 'records-edit-result-error' : null
+                      "
+                      class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+                    />
+                    @if (examResultValueInvalid()) {
+                      <ul id="records-edit-result-error" class="text-sm text-error">
+                        @for (error of editExamRecordForm.value().errors(); track error.kind) {
+                          <li>{{ error.message ?? 'Enter a valid number.' }}</li>
+                        }
+                      </ul>
+                    }
                   </div>
-                </form>
-              }
-            </div>
+                  <div class="space-y-2">
+                    <label
+                      [for]="'records-edit-date-' + record.id"
+                      class="inline-flex text-sm font-medium"
+                      >Exam date</label
+                    >
+                    <input
+                      [id]="'records-edit-date-' + record.id"
+                      [formField]="editExamRecordForm.examDate"
+                      type="date"
+                      [attr.aria-invalid]="examRecordDateInvalid()"
+                      [attr.aria-describedby]="
+                        examRecordDateInvalid() ? 'records-edit-date-error' : null
+                      "
+                      class="min-h-12 w-full min-w-0 max-w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+                    />
+                    @if (examRecordDateInvalid()) {
+                      <ul id="records-edit-date-error" class="text-sm text-error">
+                        @for (error of editExamRecordForm.examDate().errors(); track error.kind) {
+                          <li>{{ error.message ?? 'Enter a valid exam date.' }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                </fieldset>
+                <div class="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="submit"
+                    [disabled]="editExamRecordForm().submitting()"
+                    class="flex justify-center items-center gap-1 min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+                  >
+                    @if (editExamRecordForm().submitting()) {
+                      <svg
+                        class="size-5 animate-spin motion-reduce:animate-none"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="9"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          class="opacity-25"
+                        />
+                        <path
+                          d="M12 3a9 9 0 0 1 9 9"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        /></svg
+                      ><span>Saving…</span>
+                    } @else {
+                      <span>Save</span>
+                    }
+                  </button>
+                  <button
+                    type="button"
+                    [disabled]="editExamRecordForm().submitting()"
+                    (click)="editingExamRecord.set(null); editButton.focus()"
+                    class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            }
           </li>
         }
       </ul>
-    } @else {
+    } @else if (!loadingExamRecords() && !loadExamRecordsErrorMessage()) {
       <div class="mt-4 space-y-2 border-y border-border-light py-8">
         <p class="font-medium">No exam results yet.</p>
         <p class="text-sm leading-relaxed text-text-secondary">
-          Add your first hemoglobin A1c result to start tracking your progress.
+          Add your first exam record to start tracking your progress.
         </p>
       </div>
     }
@@ -272,42 +377,72 @@
   >
     <h2 id="records-support-title" class="font-medium">Keep track over time</h2>
     <p class="text-text-secondary">
-      Your results help you follow changes in your hemoglobin A1c over time. Glicare does not
-      replace medical advice.
+      Your results help you follow changes over time. Glicare does not replace medical advice.
     </p>
   </section>
 
   <dialog
     #deleteDialog
-    (close)="deletingRecordId.set(null)"
+    (close)="examRecordToDelete.set(null); errorMessage.set('')"
+    (cancel)="deleting() ? $event.preventDefault() : null"
+    [attr.aria-busy]="deleting()"
     aria-labelledby="records-delete-title"
     aria-describedby="records-delete-description"
     class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-xl border border-border bg-surface-raised p-5 text-text-primary backdrop:bg-overlay sm:p-6"
   >
-    <h2 id="records-delete-title" class="text-lg font-semibold tracking-tight">Delete result?</h2>
+    <h2 id="records-delete-title" class="text-lg font-semibold tracking-tight">Delete record?</h2>
     <p id="records-delete-description" class="mt-3 text-sm leading-relaxed text-text-secondary">
-      @if (resultToDelete(); as record) {
-        Delete the hemoglobin A1c result of
-        <strong class="font-semibold text-text-primary">{{ record.result }}%</strong> from
+      @if (examRecordToDelete(); as record) {
+        Delete the {{ record.examType.name }} record of {{ record.examResults[0].value }}
+        {{ record.examResults[0].unit }} from
         <time [attr.datetime]="record.examDate">{{ record.examDate | date: 'MMM dd, yyyy' }}</time
-        >? This action cannot be undone within this demo.
+        >? This action cannot be undone.
       }
     </p>
+    @if (errorMessage()) {
+      <p role="alert" class="mt-3 text-sm text-error">{{ errorMessage() }}</p>
+    }
     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
       <button
         type="button"
         autofocus
+        [disabled]="deleting()"
         (click)="deleteDialog.close()"
-        class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary hover:bg-surface-hover"
+        class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
       >
         Cancel
       </button>
       <button
         type="button"
-        (click)="confirmDelete(deleteDialog, resultsHeading)"
-        class="min-h-12 cursor-pointer rounded-lg bg-error px-5 py-3 text-base font-semibold text-text-inverse hover:underline hover:underline-offset-4"
+        [disabled]="deleting()"
+        (click)="confirmDelete(deleteDialog)"
+        class="flex justify-center items-center gap-1 min-h-12 cursor-pointer rounded-lg bg-error px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:underline enabled:hover:underline-offset-4 disabled:cursor-wait"
       >
-        Delete
+        @if (deleting()) {
+          <svg
+            class="size-5 animate-spin motion-reduce:animate-none"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+              class="opacity-25"
+            />
+            <path
+              d="M12 3a9 9 0 0 1 9 9"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
+          ><span>Deleting…</span>
+        } @else {
+          <span>Delete</span>
+        }
       </button>
     </div>
   </dialog>
