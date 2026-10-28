@@ -26,6 +26,7 @@ export class Records implements OnInit {
     examDate: '',
   });
 
+  // TODO - TALVEZ REMOVER examUi POIS NÃO ESTÁ SENDO UTILIZADO!
   protected readonly examUi = EXAM_UI_CONFIG;
   protected readonly examTypes = Object.entries(EXAM_UI_CONFIG);
   protected readonly records = signal<ExamRecord[]>([]);
@@ -188,6 +189,7 @@ export class Records implements OnInit {
     this.createExamRecordForm().reset({ examTypeCode: '', value: null, examDate: '' });
     this.errorMessage.set('');
     this.createExamRecordFormOpen.set(true);
+    if (this.editingExamRecord) this.editingExamRecord.set(null);
   }
 
   protected openEditExamRecordForm(record: ExamRecord): void {
@@ -197,6 +199,7 @@ export class Records implements OnInit {
     });
     this.errorMessage.set('');
     this.editingExamRecord.set(record);
+    if (this.createExamRecordFormOpen) this.createExamRecordFormOpen.set(false);
   }
 
   protected requestDeleteExamRecord(record: ExamRecord, dialog: HTMLDialogElement): void {
