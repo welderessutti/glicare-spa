@@ -91,13 +91,13 @@ describe('AppLayout', () => {
 
   it('keeps unavailable destinations disabled without creating broken links', () => {
     const disabled = Array.from(page.querySelectorAll<HTMLButtonElement>('nav button:disabled'));
-    for (const label of ['Records', 'History', 'Trends', 'Profile', 'Settings']) {
+    for (const label of ['Records', 'History', 'Profile', 'Settings']) {
       expect(disabled.some((button) => button.textContent?.includes(label))).toBe(true);
     }
     expect(disabled.every((button) => button.textContent?.includes('Coming soon'))).toBe(true);
     expect(
       Array.from(page.querySelectorAll('a[href]')).every((link) =>
-        ['/dashboard', '#app-content'].includes(link.getAttribute('href') ?? ''),
+        ['/dashboard', '/trends', '#app-content'].includes(link.getAttribute('href') ?? ''),
       ),
     ).toBe(true);
   });
@@ -110,6 +110,13 @@ describe('AppLayout', () => {
     expect(
       page.querySelector('button[popovertargetaction="hide"]')?.getAttribute('aria-label'),
     ).toBe('Close additional navigation');
+  });
+
+  it('links to Trends from the sidebar and the mobile More menu', () => {
+    const links = page.querySelectorAll('nav a[href="/trends"]');
+    expect(links).toHaveLength(2);
+    expect(page.querySelector('#app-more-navigation a[href="/trends"]')).not.toBeNull();
+    for (const link of links) expect(link.textContent).toContain('Trends');
   });
 
   it('reads the existing session user reactively and handles a missing name', async () => {

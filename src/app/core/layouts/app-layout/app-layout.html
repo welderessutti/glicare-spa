@@ -276,26 +276,49 @@
             <ul class="space-y-1">
               @for (item of moreNavigation; track item.label) {
                 <li>
-                  <button
-                    type="button"
-                    disabled
-                    class="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-text-muted"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.75"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                      class="size-5 shrink-0"
+                  @if (item.route) {
+                    <a
+                      [routerLink]="item.route"
+                      routerLinkActive
+                      ariaCurrentWhenActive="page"
+                      class="flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent"
                     >
-                      <path [attr.d]="item.icon" />
-                    </svg>
-                    <span>{{ item.label }}</span>
-                    <span class="ml-auto text-xs">Coming soon</span>
-                  </button>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        class="size-5 shrink-0"
+                      >
+                        <path [attr.d]="item.icon" />
+                      </svg>
+                      <span>{{ item.label }}</span>
+                    </a>
+                  } @else {
+                    <button
+                      type="button"
+                      disabled
+                      class="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-text-muted"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        class="size-5 shrink-0"
+                      >
+                        <path [attr.d]="item.icon" />
+                      </svg>
+                      <span>{{ item.label }}</span>
+                      <span class="ml-auto text-xs">Coming soon</span>
+                    </button>
+                  }
                 </li>
               }
             </ul>
