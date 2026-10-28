@@ -1,5 +1,15 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+  afterNextRender,
+  ElementRef,
+  Injector,
+  viewChild,
+} from '@angular/core';
 import { form, FormField, FormRoot, required, validate } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { ExamRecord } from '../../models/exam-record';
@@ -41,6 +51,8 @@ export class Records implements OnInit {
     const code = this.createExamRecordModel().examTypeCode;
     return code ? EXAM_UI_CONFIG[code] : null;
   });
+  private readonly injector = inject(Injector);
+  private readonly addButton = viewChild<ElementRef<HTMLButtonElement>>('addButton');
 
   protected readonly examTypeCodeInvalid = computed(
     () =>
@@ -192,6 +204,21 @@ export class Records implements OnInit {
     if (this.editingExamRecord) this.editingExamRecord.set(null);
   }
 
+  protected closeCreateExamRecordFormWithFocus(): void {
+    this.createExamRecordFormOpen.set(false);
+
+    afterNextRender(
+      {
+        write: () => {
+          this.addButton()?.nativeElement.focus();
+        },
+      },
+      {
+        injector: this.injector,
+      },
+    );
+  }
+
   protected openEditExamRecordForm(record: ExamRecord): void {
     this.editExamRecordForm().reset({
       value: record.examResults[0].value,
@@ -200,6 +227,11 @@ export class Records implements OnInit {
     this.errorMessage.set('');
     this.editingExamRecord.set(record);
     if (this.createExamRecordFormOpen) this.createExamRecordFormOpen.set(false);
+  }
+
+  protected closeEditExamRecordFormWithFocus(editButton: HTMLButtonElement): void {
+    this.editingExamRecord.set(null);
+    editButton.focus();
   }
 
   protected requestDeleteExamRecord(record: ExamRecord, dialog: HTMLDialogElement): void {

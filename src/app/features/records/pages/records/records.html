@@ -142,7 +142,7 @@
           <button
             type="button"
             [disabled]="createExamRecordForm().submitting()"
-            (click)="createExamRecordFormOpen.set(false)"
+            (click)="closeCreateExamRecordFormWithFocus()"
             class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
           >
             Cancel
@@ -350,7 +350,7 @@
                   <button
                     type="button"
                     [disabled]="editExamRecordForm().submitting()"
-                    (click)="editingExamRecord.set(null); editButton.focus()"
+                    (click)="closeEditExamRecordFormWithFocus(editButton)"
                     class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
                   >
                     Cancel
