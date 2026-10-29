@@ -1,0 +1,16 @@
+import { inject, Service } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { API_URL } from '../../../core/config/api-url';
+import { Observable } from 'rxjs';
+import { Profile } from '../models/profile';
+
+@Service()
+export class ProfileService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = API_URL;
+  private readonly slug = 'profile';
+
+  public getById(id: string): Observable<Profile> {
+    return this.http.get<Profile>(`${this.apiUrl}/${this.slug}/${id}`);
+  }
+}
