@@ -3,6 +3,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ExamRecord } from '../../../records/models/exam-record';
 import { ExamTypeCode, EXAM_UI_CONFIG } from '../../../records/models/exam-type-code';
 import { ExamRecordsService } from '../../../records/services/exam-records-service';
+import { finalize } from 'rxjs';
 
 @Component({
   imports: [DatePipe, DecimalPipe],
@@ -73,22 +74,24 @@ export class Trends implements OnInit {
   protected selectExamType(value: string): void {
     if (value !== 'HBA1C' && value !== 'GLU') return;
     this.selectedExamType.set(value);
-    this.loadRecords();
   }
 
   protected loadRecords(): void {
     this.loading.set(true);
     this.loadError.set('');
     this.examRecordsService
-      .getAll({ type: this.selectedExamType(), sortBy: 'examDate', sortDirection: 'asc' })
+      .getAll({ sortBy: 'examDate', sortDirection: 'asc' })
+      .pipe(
+        finalize(() => {
+          this.loading.set(false);
+        }),
+      )
       .subscribe({
         next: (records) => {
           this.records.set(records);
-          this.loading.set(false);
         },
         error: () => {
           this.loadError.set('Unable to load records.');
-          this.loading.set(false);
         },
       });
   }
