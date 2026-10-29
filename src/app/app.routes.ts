@@ -26,6 +26,11 @@ export const routes: Routes = [
         path: 'trends',
         loadComponent: () => import('./features/trends/pages/trends/trends').then((m) => m.Trends),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/profile/pages/profile/profile').then((m) => m.Profile),
+      },
     ],
   },
   {

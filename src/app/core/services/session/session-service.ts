@@ -26,6 +26,10 @@ export class SessionService {
     this._status.set('authenticated');
   }
 
+  public updateUser(user: SessionAuthenticatedUser): void {
+    this._user.set(user);
+  }
+
   public getCurrentSessionAuthenticatedUser(): Observable<SessionAuthenticatedUser> {
     return this.http.get<SessionAuthenticatedUser>(`${this.apiUrl}/${this.slug}/me`);
   }
