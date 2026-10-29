@@ -18,7 +18,7 @@ export class Trends implements OnInit {
   protected readonly records = signal<ExamRecord[]>([]);
   protected readonly selectedExamType = signal<ExamTypeCode>('HBA1C');
   protected readonly loading = signal(false);
-  protected readonly loadError = signal('');
+  protected readonly loadRecordsError = signal('');
 
   protected readonly selectedUi = computed(() => EXAM_UI_CONFIG[this.selectedExamType()]);
   protected readonly selectedRecords = computed(() =>
@@ -78,7 +78,7 @@ export class Trends implements OnInit {
 
   protected loadRecords(): void {
     this.loading.set(true);
-    this.loadError.set('');
+    this.loadRecordsError.set('');
     this.examRecordsService
       .getAll({ sortBy: 'examDate', sortDirection: 'asc' })
       .pipe(
@@ -91,7 +91,7 @@ export class Trends implements OnInit {
           this.records.set(records);
         },
         error: () => {
-          this.loadError.set('Unable to load records.');
+          this.loadRecordsError.set('Unable to load records.');
         },
       });
   }
