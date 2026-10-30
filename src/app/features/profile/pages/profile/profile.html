@@ -9,7 +9,23 @@
   <p role="status" aria-atomic="true" class="text-sm text-success">{{ feedback() }}</p>
 
   @if (loading()) {
-    <p role="status" class="text-sm text-text-secondary">Loading your profile…</p>
+    <div class="flex gap-1">
+      <svg
+        class="size-5 animate-spin motion-reduce:animate-none"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
+        <path
+          d="M12 3a9 9 0 0 1 9 9"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <p role="status" class="text-sm text-text-secondary">Loading your profile…</p>
+    </div>
   } @else if (loadError()) {
     <div class="space-y-3">
       <div
@@ -83,9 +99,34 @@
             <button
               type="submit"
               [disabled]="profileForm().submitting()"
-              class="flex min-h-12 cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+              class="flex min-h-12 gap-1 cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
             >
-              {{ profileForm().submitting() ? 'Saving changes…' : 'Save changes' }}
+              @if (profileForm().submitting()) {
+                <svg
+                  class="size-5 animate-spin motion-reduce:animate-none"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="opacity-25"
+                  />
+                  <path
+                    d="M12 3a9 9 0 0 1 9 9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>Saving changes…</span>
+              } @else {
+                <span>Save changes</span>
+              }
             </button>
             <button
               type="button"
@@ -222,9 +263,34 @@
             <button
               type="submit"
               [disabled]="passwordForm().submitting()"
-              class="flex min-h-12 cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+              class="flex min-h-12 gap-1 cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
             >
-              {{ passwordForm().submitting() ? 'Saving password…' : 'Save password' }}
+              @if (passwordForm().submitting()) {
+                <svg
+                  class="size-5 animate-spin motion-reduce:animate-none"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="opacity-25"
+                  />
+                  <path
+                    d="M12 3a9 9 0 0 1 9 9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>Saving password…</span>
+              } @else {
+                <span>Save password</span>
+              }
             </button>
             <button
               type="button"

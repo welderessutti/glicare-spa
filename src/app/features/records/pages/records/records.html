@@ -155,7 +155,7 @@
   <section aria-labelledby="records-results-title" [attr.aria-busy]="loadingExamRecords()">
     <h2 id="records-results-title" class="text-lg font-semibold tracking-tight">Your results</h2>
     @if (loadingExamRecords()) {
-      <p role="status" class="flex gap-1 mt-4 text-sm text-text-secondary">
+      <div class="flex gap-1 mt-4">
         <svg
           class="size-5 animate-spin motion-reduce:animate-none"
           viewBox="0 0 24 24"
@@ -168,11 +168,11 @@
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
-          /></svg
-        ><span>Loading your records…</span>
-      </p>
-    }
-    @if (loadExamRecordsErrorMessage()) {
+          />
+        </svg>
+        <p role="status" class="text-sm text-text-secondary">Loading your records…</p>
+      </div>
+    } @else if (loadExamRecordsErrorMessage()) {
       <div class="mt-4 space-y-3">
         <div
           role="alert"
@@ -190,8 +190,7 @@
           Try again
         </button>
       </div>
-    }
-    @if (records().length) {
+    } @else if (records().length) {
       <ul class="mt-4 divide-y divide-border-light border-y border-border-light">
         @for (record of records(); track record.id) {
           <li class="py-5">
