@@ -6,27 +6,7 @@
     </p>
   </header>
 
-  <div class="space-y-2 sm:max-w-sm">
-    <label for="trends-exam-type" class="inline-flex text-sm font-medium">Exam</label>
-    <select
-      #examType
-      id="trends-exam-type"
-      [value]="selectedExamType()"
-      [disabled]="loading()"
-      (change)="selectExamType(examType.value)"
-      class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
-    >
-      @for (type of examTypes; track type[0]) {
-        <option [value]="type[0]">{{ type[1].label }}</option>
-      }
-    </select>
-  </div>
-
   <section aria-labelledby="trends-chart-title" [attr.aria-busy]="loading()">
-    <h2 id="trends-chart-title" class="text-lg font-semibold tracking-tight">
-      {{ selectedUi().label }} trend
-    </h2>
-
     @if (loading()) {
       <div class="flex mt-4 gap-1 items-center">
         <svg
@@ -47,13 +27,7 @@
       </div>
     } @else if (loadRecordsError()) {
       <div class="mt-4 space-y-3">
-        <div
-          role="alert"
-          class="rounded-lg border border-error bg-surface-light px-4 py-3 text-center text-sm text-error"
-        >
-          <p class="font-semibold">We couldn't load your exam records</p>
-          <p class="mt-1">{{ loadRecordsError() }}</p>
-        </div>
+        <p role="alert" class="text-sm text-error">{{ loadRecordsError() }}</p>
         <button
           type="button"
           (click)="loadRecords()"
@@ -62,125 +36,147 @@
           Try again
         </button>
       </div>
-    } @else if (chart(); as plot) {
-      @let digits = '1.' + selectedUi().decimals + '-' + selectedUi().decimals;
-      <figure aria-labelledby="trends-chart-title" class="mt-4">
-        <div class="rounded-xl border border-border bg-surface-raised p-4 sm:p-6">
-          <p class="mb-3 text-xs text-text-secondary">{{ selectedUi().unit }}</p>
-          <div class="flex gap-3">
-            <div
-              aria-hidden="true"
-              class="flex shrink-0 flex-col justify-between py-1 text-xs text-text-secondary tabular-nums"
-            >
-              <span>{{ plot.maximum | number: digits }}</span>
-              <span>{{ plot.minimum | number: digits }}</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <svg viewBox="0 0 640 240" aria-hidden="true" class="block h-auto w-full">
-                <path
-                  d="M12 12H628 M12 120H628 M12 228H628"
-                  fill="none"
-                  stroke="currentColor"
-                  vector-effect="non-scaling-stroke"
-                  class="text-border"
-                />
-                <polyline
-                  [attr.points]="plot.line"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                  vector-effect="non-scaling-stroke"
-                  class="text-accent"
-                />
-                @for (point of plot.points; track point.id) {
-                  <circle
-                    [attr.cx]="point.x"
-                    [attr.cy]="point.y"
-                    r="6"
-                    fill="currentColor"
+    } @else {
+      <div class="space-y-2 sm:max-w-sm">
+        <label for="trends-exam-type" class="inline-flex text-sm font-medium">Exam</label>
+        <select
+          #examType
+          id="trends-exam-type"
+          [value]="selectedExamType()"
+          [disabled]="loading()"
+          (change)="selectExamType(examType.value)"
+          class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+        >
+          @for (type of examTypes; track type[0]) {
+            <option [value]="type[0]">{{ type[1].label }}</option>
+          }
+        </select>
+      </div>
+      <h2 id="trends-chart-title" class="mt-4 text-lg font-semibold tracking-tight">
+        {{ selectedUi().label }} trend
+      </h2>
+      @if (chart(); as plot) {
+        @let digits = '1.' + selectedUi().decimals + '-' + selectedUi().decimals;
+        <figure aria-labelledby="trends-chart-title" class="mt-4">
+          <div class="rounded-xl border border-border bg-surface-raised p-4 sm:p-6">
+            <p class="mb-3 text-xs text-text-secondary">{{ selectedUi().unit }}</p>
+            <div class="flex gap-3">
+              <div
+                aria-hidden="true"
+                class="flex shrink-0 flex-col justify-between py-1 text-xs text-text-secondary tabular-nums"
+              >
+                <span>{{ plot.maximum | number: digits }}</span>
+                <span>{{ plot.minimum | number: digits }}</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <svg viewBox="0 0 640 240" aria-hidden="true" class="block h-auto w-full">
+                  <path
+                    d="M12 12H628 M12 120H628 M12 228H628"
+                    fill="none"
+                    stroke="currentColor"
+                    vector-effect="non-scaling-stroke"
+                    class="text-border"
+                  />
+                  <polyline
+                    [attr.points]="plot.line"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                    vector-effect="non-scaling-stroke"
                     class="text-accent"
                   />
-                }
-              </svg>
+                  @for (point of plot.points; track point.id) {
+                    <circle
+                      [attr.cx]="point.x"
+                      [attr.cy]="point.y"
+                      r="6"
+                      fill="currentColor"
+                      class="text-accent"
+                    />
+                  }
+                </svg>
+              </div>
+            </div>
+            <div
+              aria-hidden="true"
+              class="mt-3 flex justify-between gap-2 text-xs text-text-secondary tabular-nums"
+              [class.justify-center]="plot.firstDate === plot.lastDate"
+            >
+              <span>{{ plot.firstDate | date: 'MMM d, yyyy' }}</span>
+              @if (plot.firstDate !== plot.lastDate) {
+                <span>{{ plot.lastDate | date: 'MMM d, yyyy' }}</span>
+              }
             </div>
           </div>
-          <div
-            aria-hidden="true"
-            class="mt-3 flex justify-between gap-2 text-xs text-text-secondary tabular-nums"
-            [class.justify-center]="plot.firstDate === plot.lastDate"
-          >
-            <span>{{ plot.firstDate | date: 'MMM d, yyyy' }}</span>
-            @if (plot.firstDate !== plot.lastDate) {
-              <span>{{ plot.lastDate | date: 'MMM d, yyyy' }}</span>
-            }
-          </div>
-        </div>
-        <figcaption class="mt-4 text-xs leading-relaxed text-text-muted">
-          Results by exam date · {{ selectedUi().unit }}
-        </figcaption>
-        <table class="sr-only">
-          <caption>
-            {{
-              selectedUi().label
-            }}
-            results by exam date
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Exam date</th>
-              <th scope="col">Result ({{ selectedUi().unit }})</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (record of selectedRecords(); track record.id) {
+          <figcaption class="mt-4 text-xs leading-relaxed text-text-muted">
+            Results by exam date · {{ selectedUi().unit }}
+          </figcaption>
+          <table class="sr-only">
+            <caption>
+              {{
+                selectedUi().label
+              }}
+              results by exam date
+            </caption>
+            <thead>
               <tr>
-                <th scope="row">{{ record.examDate | date: 'MMM d, yyyy' }}</th>
-                <td>{{ record.examResults[0].value | number: digits }} {{ selectedUi().unit }}</td>
+                <th scope="col">Exam date</th>
+                <th scope="col">Result ({{ selectedUi().unit }})</th>
               </tr>
-            }
-          </tbody>
-        </table>
-      </figure>
+            </thead>
+            <tbody>
+              @for (record of selectedRecords(); track record.id) {
+                <tr>
+                  <th scope="row">{{ record.examDate | date: 'MMM d, yyyy' }}</th>
+                  <td>
+                    {{ record.examResults[0].value | number: digits }} {{ selectedUi().unit }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </figure>
 
-      @let result = summary();
-      <dl class="mt-6 grid gap-5 border-t border-border pt-6 sm:grid-cols-3">
-        <div class="min-w-0">
-          <dt class="text-sm font-medium text-text-secondary">Latest</dt>
-          <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
-            {{ result.latest | number: digits }}
-            <span class="text-sm font-medium text-text-secondary">{{ selectedUi().unit }}</span>
-          </dd>
-        </div>
-        <div class="min-w-0">
-          <dt class="text-sm font-medium text-text-secondary">Previous</dt>
-          <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
-            @if (result.previous !== null) {
-              {{ result.previous | number: digits }}
+        @let result = summary();
+        <dl class="mt-6 grid gap-5 border-t border-border pt-6 sm:grid-cols-3">
+          <div class="min-w-0">
+            <dt class="text-sm font-medium text-text-secondary">Latest</dt>
+            <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+              {{ result.latest | number: digits }}
               <span class="text-sm font-medium text-text-secondary">{{ selectedUi().unit }}</span>
-            } @else {
-              —
-            }
-          </dd>
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-sm font-medium text-text-secondary">Previous</dt>
+            <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+              @if (result.previous !== null) {
+                {{ result.previous | number: digits }}
+                <span class="text-sm font-medium text-text-secondary">{{ selectedUi().unit }}</span>
+              } @else {
+                —
+              }
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-sm font-medium text-text-secondary">Change</dt>
+            <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+              @if (result.change !== null) {
+                {{ result.change > 0 ? '+' : '' }}{{ result.change | number: digits }}
+              } @else {
+                —
+              }
+            </dd>
+          </div>
+        </dl>
+      } @else {
+        <div class="mt-4 rounded-xl border border-border bg-surface-light p-6 text-center">
+          <h3 class="font-medium">No data yet</h3>
+          <p class="mt-2 text-sm leading-relaxed text-text-secondary">
+            Add exam records to see your trend over time.
+          </p>
         </div>
-        <div class="min-w-0">
-          <dt class="text-sm font-medium text-text-secondary">Change</dt>
-          <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
-            @if (result.change !== null) {
-              {{ result.change > 0 ? '+' : '' }}{{ result.change | number: digits }}
-            } @else {
-              —
-            }
-          </dd>
-        </div>
-      </dl>
-    } @else {
-      <div class="mt-4 rounded-xl border border-border bg-surface-light p-6 text-center">
-        <h3 class="font-medium">No data yet</h3>
-        <p class="mt-2 text-sm leading-relaxed text-text-secondary">
-          Add exam records to see your trend over time.
-        </p>
-      </div>
+      }
     }
   </section>
 </div>
