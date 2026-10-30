@@ -6,6 +6,11 @@
         Manage your exam results over time.
       </p>
     </div>
+
+    @if (createExamRecordErrorMessage()) {
+      <p role="alert" class="text-sm text-error">{{ createExamRecordErrorMessage() }}</p>
+    }
+
     @if (!createExamRecordFormOpen()) {
       <button
         #addButton
@@ -20,10 +25,6 @@
       </button>
     }
   </header>
-
-  @if (errorMessage() && !examRecordToDelete()) {
-    <p role="alert" class="text-sm text-error">{{ errorMessage() }}</p>
-  }
 
   @if (createExamRecordFormOpen()) {
     <section
@@ -314,6 +315,11 @@
                     }
                   </div>
                 </fieldset>
+                @if (updateExamRecordErrorMessage()) {
+                  <p role="alert" class="text-sm text-error">
+                    {{ updateExamRecordErrorMessage() }}
+                  </p>
+                }
                 <div class="flex flex-col gap-3 sm:flex-row">
                   <button
                     type="submit"
@@ -382,7 +388,7 @@
 
   <dialog
     #deleteDialog
-    (close)="examRecordToDelete.set(null); errorMessage.set('')"
+    (close)="examRecordToDelete.set(null); deleteExamRecordErrorMessage.set('')"
     (cancel)="deleting() ? $event.preventDefault() : null"
     [attr.aria-busy]="deleting()"
     aria-labelledby="records-delete-title"
@@ -398,8 +404,8 @@
         >? This action cannot be undone.
       }
     </p>
-    @if (errorMessage()) {
-      <p role="alert" class="mt-3 text-sm text-error">{{ errorMessage() }}</p>
+    @if (deleteExamRecordErrorMessage()) {
+      <p role="alert" class="mt-3 text-sm text-error">{{ deleteExamRecordErrorMessage() }}</p>
     }
     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
       <button

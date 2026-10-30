@@ -42,7 +42,9 @@ export class Records implements OnInit {
   protected readonly records = signal<ExamRecord[]>([]);
   protected readonly loadingExamRecords = signal(false);
   protected readonly loadExamRecordsErrorMessage = signal('');
-  protected readonly errorMessage = signal('');
+  protected readonly createExamRecordErrorMessage = signal('');
+  protected readonly updateExamRecordErrorMessage = signal('');
+  protected readonly deleteExamRecordErrorMessage = signal('');
   protected readonly createExamRecordFormOpen = signal(false);
   protected readonly editingExamRecord = signal<ExamRecord | null>(null);
   protected readonly examRecordToDelete = signal<ExamRecord | null>(null);
@@ -123,7 +125,7 @@ export class Records implements OnInit {
         action: async (field) => {
           const { examTypeCode, value, examDate } = field().value();
           if (!examTypeCode || value === null) return;
-          this.errorMessage.set('');
+          this.createExamRecordErrorMessage.set('');
           const request: CreateExamRecordRequest = {
             examTypeCode,
             examDate,
@@ -135,7 +137,7 @@ export class Records implements OnInit {
             this.createExamRecordFormOpen.set(false);
             this.createExamRecordForm().reset({ examTypeCode: '', value: null, examDate: '' });
           } catch {
-            this.errorMessage.set('Unable to save record.');
+            this.createExamRecordErrorMessage.set('Unable to save record.');
           }
         },
         onInvalid: (field) => field().errorSummary()[0]?.fieldTree().focusBoundControl(),
@@ -155,7 +157,7 @@ export class Records implements OnInit {
           const record = this.editingExamRecord();
           const { value, examDate } = field().value();
           if (!record || value === null) return;
-          this.errorMessage.set('');
+          this.updateExamRecordErrorMessage.set('');
           const request: UpdateExamRecordRequest = {
             examDate,
             examResults: [{ id: record.examResults[0].id, value }],
@@ -170,7 +172,7 @@ export class Records implements OnInit {
             this.editingExamRecord.set(null);
             this.editExamRecordForm().reset({ value: null, examDate: '' });
           } catch {
-            this.errorMessage.set('Unable to update record.');
+            this.updateExamRecordErrorMessage.set('Unable to update record.');
           }
         },
         onInvalid: (field) => field().errorSummary()[0]?.fieldTree().focusBoundControl(),
@@ -199,7 +201,7 @@ export class Records implements OnInit {
 
   protected openCreateExamRecordForm(): void {
     this.createExamRecordForm().reset({ examTypeCode: '', value: null, examDate: '' });
-    this.errorMessage.set('');
+    this.createExamRecordErrorMessage.set('');
     this.createExamRecordFormOpen.set(true);
     if (this.editingExamRecord) this.editingExamRecord.set(null);
   }
@@ -224,7 +226,7 @@ export class Records implements OnInit {
       value: record.examResults[0].value,
       examDate: record.examDate,
     });
-    this.errorMessage.set('');
+    this.updateExamRecordErrorMessage.set('');
     this.editingExamRecord.set(record);
     if (this.createExamRecordFormOpen) this.createExamRecordFormOpen.set(false);
   }
@@ -236,7 +238,7 @@ export class Records implements OnInit {
 
   protected requestDeleteExamRecord(record: ExamRecord, dialog: HTMLDialogElement): void {
     this.examRecordToDelete.set(record);
-    this.errorMessage.set('');
+    this.deleteExamRecordErrorMessage.set('');
     dialog.showModal();
   }
 
@@ -244,7 +246,7 @@ export class Records implements OnInit {
     const record = this.examRecordToDelete();
     if (!record || this.deleting()) return;
     this.deleting.set(true);
-    this.errorMessage.set('');
+    this.deleteExamRecordErrorMessage.set('');
     this.examRecordsService.deleteById(record.id).subscribe({
       next: () => {
         this.records.update((records) => records.filter((current) => current.id !== record.id));
@@ -255,7 +257,7 @@ export class Records implements OnInit {
       },
       error: () => {
         this.deleting.set(false);
-        this.errorMessage.set('Unable to delete record.');
+        this.deleteExamRecordErrorMessage.set('Unable to delete record.');
       },
     });
   }
