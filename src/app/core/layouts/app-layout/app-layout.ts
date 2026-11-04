@@ -33,7 +33,11 @@ export class AppLayout {
       route: '/profile',
       icon: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-2a8 8 0 0 1 16 0v2',
     },
-    { label: 'Settings', route: null, icon: 'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6' },
+    {
+      label: 'Settings',
+      route: '/settings',
+      icon: 'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6',
+    },
   ] as const;
 
   protected readonly mobileNavigation = this.primaryNavigation.slice(0, 3);

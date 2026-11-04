@@ -1,1 +1,227 @@
-<p>settings works!</p>
+<div class="max-w-3xl space-y-8 sm:space-y-10">
+  <header>
+    <h1 id="settings-title" class="text-2xl font-semibold tracking-tight sm:text-3xl">Settings</h1>
+    <p class="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base">
+      Customize how Glicare works for you.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="flex gap-1">
+      <svg
+        class="size-5 animate-spin motion-reduce:animate-none"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
+        <path
+          d="M12 3a9 9 0 0 1 9 9"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <p role="status" class="text-sm text-text-secondary">Loading your settings…</p>
+    </div>
+  } @else if (loadError()) {
+    <div class="space-y-3">
+      <p role="alert" class="text-sm text-error">{{ loadError() }}</p>
+      <button
+        type="button"
+        (click)="loadSettings()"
+        class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover sm:w-auto"
+      >
+        Try again
+      </button>
+    </div>
+  } @else if (settings()) {
+    <form
+      [formRoot]="settingsForm"
+      aria-labelledby="settings-title"
+      [attr.aria-busy]="settingsForm().submitting()"
+      class="space-y-8 sm:space-y-10"
+    >
+      <fieldset [disabled]="settingsForm().submitting()" class="min-w-0 space-y-8 sm:space-y-10">
+        <legend class="sr-only">Settings</legend>
+
+        <section aria-labelledby="settings-preferences-title" class="border-t border-border pt-6">
+          <h2 id="settings-preferences-title" class="text-lg font-semibold tracking-tight">
+            Preferences
+          </h2>
+          <div class="mt-5 space-y-2">
+            <label for="settings-default-exam" class="inline-flex text-sm font-medium">
+              Default Trends exam
+            </label>
+            <p id="settings-default-exam-hint" class="text-sm text-text-secondary">
+              Choose which exam appears first when opening Trends.
+            </p>
+            <select
+              id="settings-default-exam"
+              [formField]="settingsForm.defaultTrendsExam"
+              aria-describedby="settings-default-exam-hint"
+              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface sm:max-w-sm"
+            >
+              @for (type of examTypes; track type[0]) {
+                <option [value]="type[0]">{{ type[1].label }}</option>
+              }
+            </select>
+          </div>
+        </section>
+
+        <section aria-labelledby="settings-language-title" class="border-t border-border pt-6">
+          <h2 id="settings-language-title" class="text-lg font-semibold tracking-tight">
+            Language
+          </h2>
+          <div class="mt-5 space-y-2">
+            <label for="settings-language" class="inline-flex text-sm font-medium">Language</label>
+            <p id="settings-language-hint" class="text-sm text-text-secondary">
+              Choose the language used across Glicare.
+            </p>
+            <select
+              id="settings-language"
+              [formField]="settingsForm.language"
+              aria-describedby="settings-language-hint"
+              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface sm:max-w-sm"
+            >
+              <option value="en">English</option>
+            </select>
+          </div>
+        </section>
+
+        <section aria-labelledby="settings-reminders-title" class="border-t border-border pt-6">
+          <h2 id="settings-reminders-title" class="text-lg font-semibold tracking-tight">
+            Exam reminders
+          </h2>
+          <p class="mt-2 text-sm leading-relaxed text-text-secondary">
+            Choose if and how often Glicare should remind you about your exams.
+          </p>
+
+          <div class="mt-5 space-y-6">
+            <fieldset class="min-w-0 space-y-3">
+              <legend class="mb-2 text-sm font-semibold">{{ examUi.HBA1C.label }}</legend>
+              <label
+                for="settings-hba1c-reminder"
+                class="flex min-h-12 cursor-pointer items-center justify-between gap-3 sm:max-w-sm"
+              >
+                <span class="text-sm font-medium">Reminder</span>
+                <input
+                  id="settings-hba1c-reminder"
+                  type="checkbox"
+                  [formField]="settingsForm.hba1cReminderEnabled"
+                  class="size-5 shrink-0 cursor-pointer accent-accent"
+                />
+              </label>
+              <div class="space-y-2">
+                <label for="settings-hba1c-interval" class="inline-flex text-sm font-medium">
+                  Remind me every
+                </label>
+                <select
+                  #hba1cInterval
+                  id="settings-hba1c-interval"
+                  [disabled]="settingsForm.hba1cReminderInterval().disabled()"
+                  (change)="settingsForm.hba1cReminderInterval().value.set(+hba1cInterval.value)"
+                  class="block min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted sm:max-w-sm"
+                >
+                  @for (months of reminderIntervals; track months) {
+                    <option
+                      [value]="months"
+                      [selected]="months === settingsForm.hba1cReminderInterval().value()"
+                    >
+                      {{ months }} {{ months === 1 ? 'month' : 'months' }}
+                    </option>
+                  }
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset class="min-w-0 space-y-3">
+              <legend class="mb-2 text-sm font-semibold">{{ examUi.GLU.label }}</legend>
+              <label
+                for="settings-glucose-reminder"
+                class="flex min-h-12 cursor-pointer items-center justify-between gap-3 sm:max-w-sm"
+              >
+                <span class="text-sm font-medium">Reminder</span>
+                <input
+                  id="settings-glucose-reminder"
+                  type="checkbox"
+                  [formField]="settingsForm.glucoseReminderEnabled"
+                  class="size-5 shrink-0 cursor-pointer accent-accent"
+                />
+              </label>
+              <div class="space-y-2">
+                <label for="settings-glucose-interval" class="inline-flex text-sm font-medium">
+                  Remind me every
+                </label>
+                <select
+                  #glucoseInterval
+                  id="settings-glucose-interval"
+                  [disabled]="settingsForm.glucoseReminderInterval().disabled()"
+                  (change)="
+                    settingsForm.glucoseReminderInterval().value.set(+glucoseInterval.value)
+                  "
+                  class="block min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted sm:max-w-sm"
+                >
+                  @for (months of reminderIntervals; track months) {
+                    <option
+                      [value]="months"
+                      [selected]="months === settingsForm.glucoseReminderInterval().value()"
+                    >
+                      {{ months }} {{ months === 1 ? 'month' : 'months' }}
+                    </option>
+                  }
+                </select>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+      </fieldset>
+
+      <div class="space-y-3 border-t border-border pt-6">
+        @if (updateError()) {
+          <p role="alert" class="text-sm text-error">{{ updateError() }}</p>
+        }
+        @if (feedback()) {
+          <p role="status" aria-atomic="true" class="text-sm text-success">{{ feedback() }}</p>
+        }
+        <button
+          type="submit"
+          [disabled]="settingsForm().submitting()"
+          class="flex min-h-12 gap-1 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait sm:w-auto"
+        >
+          @if (settingsForm().submitting()) {
+            <svg
+              class="size-5 animate-spin motion-reduce:animate-none"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+                class="opacity-25"
+              />
+              <path
+                d="M12 3a9 9 0 0 1 9 9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            ><span>Saving…</span>
+          } @else {
+            <span>Save changes</span>
+          }
+        </button>
+      </div>
+    </form>
+  }
+
+  <p role="status" aria-atomic="true" class="sr-only">
+    @if (settingsForm().submitting()) {
+      Saving your settings. Please wait.
+    }
+  </p>
+</div>
