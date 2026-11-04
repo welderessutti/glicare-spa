@@ -21,15 +21,15 @@ export class AuthService {
   }
 
   public login(request: LoginRequest): Observable<SessionAuthenticatedUser> {
-    return this.http.post<SessionAuthenticatedUser>(`${this.apiUrl}${this.slug}/login`, request);
+    return this.http.post<SessionAuthenticatedUser>(`${this.apiUrl}/${this.slug}/login`, request);
   }
 
   public forgotPassword(request: ForgotPasswordRequest): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}${this.slug}/forgot-password`, request);
+    return this.http.post<void>(`${this.apiUrl}/${this.slug}/forgot-password`, request);
   }
 
   public resetPassword(request: ResetPasswordRequest): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}${this.slug}/reset-password`, request);
+    return this.http.post<void>(`${this.apiUrl}/${this.slug}/reset-password`, request);
   }
 
   public changePassword(request: ChangePasswordRequest): Observable<void> {
@@ -37,10 +37,10 @@ export class AuthService {
   }
 
   public verifyEmail(token: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}${this.slug}/verify-email`, { token });
+    return this.http.post<void>(`${this.apiUrl}/${this.slug}/verify-email`, { token });
   }
 
   public resendVerification(request: ResendVerificationRequest): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}${this.slug}/resend-verification`, request);
+    return this.http.post<void>(`${this.apiUrl}/${this.slug}/resend-verification`, request);
   }
 }

@@ -59,7 +59,7 @@ export class SessionService {
     console.log('user:', this.user());
     console.log('status:', this.status());
 
-    return this.http.post<void>(`${this.apiUrl}${this.slug}/logout`, {}).pipe(
+    return this.http.post<void>(`${this.apiUrl}/${this.slug}/logout`, {}).pipe(
       tap(() => {
         this.endSession();
         console.log('user:', this.user());
