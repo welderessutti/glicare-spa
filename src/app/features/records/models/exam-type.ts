@@ -1,8 +1,9 @@
-import { ExamTypeCode } from './exam-type-code';
+import { ExamResultSchema } from './exam-result-schema';
 
 export interface ExamType {
   id: string;
-  code: ExamTypeCode;
+  code: string;
   name: string;
   active: boolean;
+  resultSchemas: ExamResultSchema[];
 }
