@@ -60,8 +60,9 @@ describe('ExamRecordsService', () => {
   it('creates using only the provided creation DTO', () => {
     const body: CreateExamRecordRequest = {
       examTypeCode: 'HBA1C',
+      examResultSchemaCode: 'STANDARD',
       examDate: '2026-10-20',
-      examResults: [{ label: 'Result', value: 6.5 }],
+      examResults: [{ resultDefinitionCode: 'RESULT', value: 6.5 }],
     };
     service.create(body).subscribe();
     const request = http.expectOne(url);

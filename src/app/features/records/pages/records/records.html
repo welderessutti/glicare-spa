@@ -32,27 +32,60 @@
       aria-labelledby="records-add-title"
       class="rounded-xl border border-border bg-surface-raised p-5 sm:p-6"
     >
-      <h2 id="records-add-title" class="text-lg font-semibold tracking-tight">Add exam record</h2>
+      <h2
+        #createTitle
+        id="records-add-title"
+        tabindex="-1"
+        class="text-lg font-semibold tracking-tight"
+      >
+        Add exam record
+      </h2>
+      @if (loadingExamTypes()) {
+        <p role="status" class="mt-4 text-sm text-text-secondary">Loading exam types…</p>
+      } @else if (loadExamTypesErrorMessage()) {
+        <div class="mt-4 space-y-3">
+          <p role="alert" class="text-sm text-error">{{ loadExamTypesErrorMessage() }}</p>
+          <button
+            type="button"
+            (click)="loadExamTypes()"
+            class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (!examTypes().length) {
+        <p role="status" class="mt-4 text-sm text-text-secondary">No exam types are available.</p>
+      }
       <form
         [formRoot]="createExamRecordForm"
         [attr.aria-busy]="createExamRecordForm().submitting()"
         aria-labelledby="records-add-title"
         class="mt-5 space-y-6"
       >
-        <fieldset [disabled]="createExamRecordForm().submitting()" class="min-w-0 space-y-5">
+        <fieldset
+          [disabled]="
+            createExamRecordForm().submitting() ||
+            loadingExamTypes() ||
+            !!loadExamTypesErrorMessage() ||
+            !examTypes().length
+          "
+          class="min-w-0 space-y-5"
+        >
           <legend class="sr-only">Exam details</legend>
           <div class="space-y-2">
             <label for="records-exam-type" class="inline-flex text-sm font-medium">Exam type</label>
             <select
+              #createExamType
               id="records-exam-type"
               [formField]="createExamRecordForm.examTypeCode"
+              (change)="selectExamType(createExamType.value)"
               [attr.aria-invalid]="examTypeCodeInvalid()"
               [attr.aria-describedby]="examTypeCodeInvalid() ? 'records-type-error' : null"
               class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
             >
               <option value="">Choose an exam type</option>
-              @for (type of examTypes; track type[0]) {
-                <option [value]="type[0]">{{ type[1].label }}</option>
+              @for (type of examTypes(); track type.code) {
+                <option [value]="type.code">{{ type.name }}</option>
               }
             </select>
             @if (examTypeCodeInvalid()) {
@@ -64,30 +97,81 @@
             }
           </div>
           <div class="space-y-2">
-            <label for="records-result" class="inline-flex text-sm font-medium"
-              >Result
-              @if (createUi(); as ui) {
-                ({{ ui.unit }})
-              }
-            </label>
-            <input
-              id="records-result"
-              [formField]="createExamRecordForm.value"
-              type="number"
-              inputmode="decimal"
-              [step]="createUi()?.step ?? 1"
-              [attr.aria-invalid]="examValueInvalid()"
-              [attr.aria-describedby]="examValueInvalid() ? 'records-result-error' : null"
+            <label for="records-result-schema" class="inline-flex text-sm font-medium"
+              >Result schema</label
+            >
+            <select
+              #createExamResultSchema
+              id="records-result-schema"
+              [formField]="createExamRecordForm.examResultSchemaCode"
+              (change)="selectExamResultSchema(createExamResultSchema.value)"
+              [attr.aria-invalid]="examResultSchemaCodeInvalid()"
+              [attr.aria-describedby]="
+                examResultSchemaCodeInvalid() ? 'records-schema-error' : null
+              "
               class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
-            />
-            @if (examValueInvalid()) {
-              <ul id="records-result-error" class="text-sm text-error">
-                @for (error of createExamRecordForm.value().errors(); track error.kind) {
-                  <li>{{ error.message ?? 'Enter a valid number.' }}</li>
+            >
+              <option value="">Choose a result schema</option>
+              @for (schema of examResultSchemas(); track schema.code) {
+                <option [value]="schema.code">{{ schema.name }}</option>
+              }
+            </select>
+            @if (examResultSchemaCodeInvalid()) {
+              <ul id="records-schema-error" class="text-sm text-error">
+                @for (
+                  error of createExamRecordForm.examResultSchemaCode().errors();
+                  track error.kind
+                ) {
+                  <li>{{ error.message }}</li>
                 }
               </ul>
             }
+            @if (createExamRecordForm.examTypeCode().value() && !examResultSchemas().length) {
+              <p role="status" class="text-sm text-text-secondary">
+                No result schemas are available for this exam.
+              </p>
+            }
           </div>
+          @for (result of createExamRecordForm.examResults; track result) {
+            @let definition = examResultDefinitions()[$index];
+            @let invalid = result.value().touched() && result.value().invalid();
+            <div class="space-y-2">
+              <label [for]="'records-result-' + $index" class="inline-flex text-sm font-medium">{{
+                definition.label
+              }}</label>
+              <input
+                [id]="'records-result-' + $index"
+                [formField]="result.value"
+                type="number"
+                inputmode="decimal"
+                step="any"
+                [attr.aria-invalid]="invalid"
+                [attr.aria-describedby]="
+                  'records-result-unit-' +
+                  $index +
+                  (invalid ? ' records-result-error-' + $index : '')
+                "
+                class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+              />
+              <p [id]="'records-result-unit-' + $index" class="text-sm text-text-secondary">
+                {{ definition.unit }}
+              </p>
+              @if (invalid) {
+                <ul [id]="'records-result-error-' + $index" class="text-sm text-error">
+                  @for (error of result.value().errors(); track error.kind) {
+                    <li>{{ error.message ?? 'Enter a valid number.' }}</li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+          @if (
+            createExamRecordForm.examResultSchemaCode().value() && !examResultDefinitions().length
+          ) {
+            <p role="status" class="text-sm text-text-secondary">
+              No result fields are available for this schema.
+            </p>
+          }
           <div class="space-y-2">
             <label for="records-exam-date" class="inline-flex text-sm font-medium">Exam date</label>
             <input
@@ -110,7 +194,14 @@
         <div class="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row">
           <button
             type="submit"
-            [disabled]="createExamRecordForm().submitting()"
+            [disabled]="
+              createExamRecordForm().submitting() ||
+              loadingExamTypes() ||
+              !!loadExamTypesErrorMessage() ||
+              !examTypes().length ||
+              (createExamRecordForm.examResultSchemaCode().value() &&
+                !examResultDefinitions().length)
+            "
             class="flex gap-1 justify-center items-center min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
           >
             @if (createExamRecordForm().submitting()) {
