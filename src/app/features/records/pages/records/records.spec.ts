@@ -115,23 +115,19 @@ const catalog: ExamType[] = [
 ];
 
 function record(id: string, code: string, value: number, date: string): ExamRecord {
-  const resultDefinition = {
-    id: `definition-${code}`,
-    code: 'RESULT',
-    label: 'Result',
-    unit: code === 'GLU' ? 'mg/dL' : '%',
-    active: true,
-  };
+  const type = catalog.find((type) => type.code === code);
+  const schema = type?.resultSchemas.find((schema) => schema.code === 'STANDARD');
+  const resultDefinition = schema?.resultDefinitions.find(
+    (definition) => definition.code === 'RESULT',
+  );
+  if (!type || !schema || !resultDefinition) throw new Error('Missing single-result test fixture');
   return {
     id,
     userId: 'server-user',
     createdAt: '2026-10-20T10:00:00Z',
     examDate: date,
-    examType: {
-      code,
-      name: code === 'GLU' ? 'Blood Glucose' : 'Hemoglobin A1c',
-    },
-    examResultSchema: { code: 'STANDARD', name: 'Standard', active: true },
+    examType: { code: type.code, name: type.name },
+    examResultSchema: { code: schema.code, name: schema.name, active: schema.active },
     examResults: [{ id: `result-${id}`, resultDefinition, value }],
   };
 }
@@ -274,10 +270,10 @@ describe('Records', () => {
     expect(page.textContent).not.toContain('No exam results yet.');
     await load();
     expect(rows()).toHaveLength(2);
-    expect(rows()[0].textContent).toContain('Hemoglobin A1c');
+    expect(rows()[0].textContent).toContain('Catalog A1c');
     expect(rows()[0].textContent).toContain('6.5');
     expect(rows()[0].textContent).toContain('%');
-    expect(rows()[1].textContent).toContain('Blood Glucose');
+    expect(rows()[1].textContent).toContain('Catalog glucose');
     expect(rows()[1].textContent).toContain('mg/dL');
     expect(page.textContent).not.toContain('Demo');
     expect(page.querySelector('form')).toBeNull();
@@ -449,6 +445,23 @@ describe('Records', () => {
         { resultDefinitionCode: 'SECOND', value: -1.234 },
       ],
     });
+    const saved = multiRecord();
+    const values = [0, -1.234];
+    saved.examResults = saved.examResults.map((result, index) => ({
+      ...result,
+      value: values[index],
+    }));
+    createResponse.next(saved);
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(rows()).toHaveLength(3);
+    expect(rows()[0].textContent).toContain('Backend panel');
+    expect(
+      [...rows()[0].querySelectorAll('dd')].map((item) =>
+        item.textContent?.trim().replace(/\s+/g, ' '),
+      ),
+    ).toEqual(['0 unit A', '-1.234 unit B']);
+    expect(page.querySelector('form')).toBeNull();
   });
 
   it.each([
@@ -614,7 +627,7 @@ describe('Records', () => {
     await load();
     await click(button('Delete', rows()[1]));
     expect(dialog.open).toBe(true);
-    expect(dialog.textContent).toContain('Blood Glucose');
+    expect(dialog.textContent).toContain('Catalog glucose');
     expect(dialog.textContent).not.toContain('108 mg/dL');
     expect(dialog.textContent).toContain('Jul 08, 2026');
     const escape = new Event('cancel', { cancelable: true });
@@ -668,7 +681,7 @@ describe('Records', () => {
     retry.complete();
     await fixture.whenStable();
     expect(rows()).toHaveLength(1);
-    expect(rows()[0].textContent).toContain('Blood Glucose');
+    expect(rows()[0].textContent).toContain('Catalog glucose');
     expect(dialog.open).toBe(false);
   });
 

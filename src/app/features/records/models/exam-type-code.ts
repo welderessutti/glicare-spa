@@ -1,3 +1,5 @@
+// Legacy metadata retained for Dashboard, Trends and Settings.
+// Records uses the backend catalog and record DTO metadata instead.
 export type ExamTypeCode = 'GLU' | 'HBA1C';
 
 export const EXAM_UI_CONFIG = {
