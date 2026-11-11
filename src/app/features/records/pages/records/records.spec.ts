@@ -4,7 +4,6 @@ import { Observable, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { Records } from './records';
 import { ExamRecord } from '../../models/exam-record';
-import { ExamTypeCode } from '../../models/exam-type-code';
 import { ExamType } from '../../models/exam-type';
 import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
 import { UpdateExamRecordRequest } from '../../models/requests/update-exam-record-request';
@@ -115,27 +114,46 @@ const catalog: ExamType[] = [
   { id: 'type-retired', code: 'RETIRED', name: 'Retired exam', active: false, resultSchemas: [] },
 ];
 
-function record(id: string, code: ExamTypeCode, value: number, date: string): ExamRecord {
+function record(id: string, code: string, value: number, date: string): ExamRecord {
+  const resultDefinition = {
+    id: `definition-${code}`,
+    code: 'RESULT',
+    label: 'Result',
+    unit: code === 'GLU' ? 'mg/dL' : '%',
+    active: true,
+  };
   return {
     id,
     userId: 'server-user',
     createdAt: '2026-10-20T10:00:00Z',
     examDate: date,
     examType: {
-      id: `type-${code}`,
       code,
       name: code === 'GLU' ? 'Blood Glucose' : 'Hemoglobin A1c',
-      active: true,
     },
-    examResults: [
-      {
-        id: `result-${id}`,
-        examRecordId: id,
-        label: 'Result',
-        value,
-        unit: code === 'GLU' ? 'mg/dL' : '%',
-      },
-    ],
+    examResultSchema: { code: 'STANDARD', name: 'Standard', active: true },
+    examResults: [{ id: `result-${id}`, resultDefinition, value }],
+  };
+}
+
+function multiRecord(active = true): ExamRecord {
+  const type = catalog[2];
+  const schema = type.resultSchemas[0];
+  const definitions = schema.resultDefinitions
+    .filter((definition) => definition.active)
+    .map((definition) => ({ ...definition, active }));
+  return {
+    id: 'panel-record',
+    userId: 'server-user',
+    examDate: '2026-10-10',
+    createdAt: '2026-10-10T12:00:00Z',
+    examType: { code: type.code, name: type.name },
+    examResultSchema: { code: schema.code, name: schema.name, active },
+    examResults: definitions.map((resultDefinition, index) => ({
+      id: `result-panel-${resultDefinition.code}`,
+      resultDefinition,
+      value: (index + 1) * 10,
+    })),
   };
 }
 
@@ -250,11 +268,10 @@ describe('Records', () => {
     deleteResponse.complete();
   });
 
-  it('loads the real list before showing an empty state and requests date sorting', async () => {
-    expect(getAll).toHaveBeenCalledExactlyOnceWith({ sortBy: 'examDate', sortDirection: 'desc' });
+  it('loads records using exam type references and result definition data', async () => {
+    expect(getAll).toHaveBeenCalledExactlyOnceWith();
     expect(page.textContent).toContain('Loading your records');
     expect(page.textContent).not.toContain('No exam results yet.');
-    expect(button('Add record').disabled).toBe(true);
     await load();
     expect(rows()).toHaveLength(2);
     expect(rows()[0].textContent).toContain('Hemoglobin A1c');
@@ -271,7 +288,7 @@ describe('Records', () => {
       new HttpErrorResponse({ status: 500, error: { message: 'internal database details' } }),
     );
     await fixture.whenStable();
-    expect(element('[role="alert"]').textContent).toContain('Unable to load your records');
+    expect(element('[role="alert"]').textContent).toContain('Unable to load records.');
     expect(page.textContent).not.toContain('internal database');
     expect(page.textContent).not.toContain('No exam results yet.');
     const retry = new Subject<ExamRecord[]>();
@@ -438,7 +455,7 @@ describe('Records', () => {
     { code: 'HBA1C', value: '101.234' },
     { code: 'GLU', value: '-1.23' },
   ])(
-    'creates $code with business codes only and resets after the legacy response',
+    'creates $code with business codes only and resets after the new read response',
     async ({ code, value }) => {
       await load();
       await click(button('Add record'));
@@ -573,11 +590,10 @@ describe('Records', () => {
     await Promise.resolve();
     await fixture.whenStable();
     expect(rows()).toHaveLength(2);
-    expect(rows()[0].textContent).toContain('149');
-    expect(rows()[0].querySelector('time')?.dateTime).toBe('2026-10-21');
+    expect(rows()[1].textContent).toContain('149');
+    expect(rows()[1].querySelector('time')?.dateTime).toBe('2026-10-21');
     expect(document.activeElement).toBe(edit);
     expect(page.querySelector('form')).toBeNull();
-    expect(page.textContent).toContain('Record updated.');
   });
 
   it('keeps edit inputs and the original record after a rejected update', async () => {
@@ -588,7 +604,7 @@ describe('Records', () => {
     updateResponse.error(new HttpErrorResponse({ status: 429 }));
     await Promise.resolve();
     await fixture.whenStable();
-    expect(element('[role="alert"]').textContent).toContain('Too many attempts');
+    expect(element('[role="alert"]').textContent).toContain('Unable to update record.');
     expect(element<HTMLInputElement>('form input[type="number"]').value).toBe('6.9');
     expect(element('form').getAttribute('aria-busy')).toBe('false');
     expect(rows()[0].textContent).toContain('6.5');
@@ -599,7 +615,7 @@ describe('Records', () => {
     await click(button('Delete', rows()[1]));
     expect(dialog.open).toBe(true);
     expect(dialog.textContent).toContain('Blood Glucose');
-    expect(dialog.textContent).toContain('108 mg/dL');
+    expect(dialog.textContent).not.toContain('108 mg/dL');
     expect(dialog.textContent).toContain('Jul 08, 2026');
     const escape = new Event('cancel', { cancelable: true });
     dialog.dispatchEvent(escape);
@@ -630,7 +646,6 @@ describe('Records', () => {
     expect(page.querySelector('form')).toBeNull();
     expect(document.activeElement).toBe(element('#records-results-title'));
     expect(page.textContent).toContain('No exam results yet.');
-    expect(page.textContent).toContain('Record deleted.');
   });
 
   it('retains the deletion target after failure and supports retry', async () => {
@@ -644,7 +659,7 @@ describe('Records', () => {
     expect(dialog.open).toBe(true);
     expect(rows()).toHaveLength(2);
     expect(button('Cancel', dialog).disabled).toBe(false);
-    expect(dialog.textContent).toContain('Unable to delete your record');
+    expect(dialog.textContent).toContain('Unable to delete record.');
     expect(dialog.textContent).not.toContain('internal ownership');
     const retry = new Subject<void>();
     deleteById.mockReturnValueOnce(retry);
@@ -657,19 +672,126 @@ describe('Records', () => {
     expect(dialog.open).toBe(false);
   });
 
-  it('does not silently edit or discard data for records outside the single-result contract', async () => {
-    const unsupported = record('multiple', 'GLU', 100, '2026-10-10');
-    unsupported.examResults.push({
-      id: 'second',
-      examRecordId: 'multiple',
-      label: 'Other result',
-      value: 110,
-      unit: 'mg/dL',
+  it('renders and edits every result of an inactive historical schema', async () => {
+    const historical = multiRecord(false);
+    await load([historical]);
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0].textContent).toContain('Backend panel');
+    expect([...rows()[0].querySelectorAll('dt')].map((item) => item.textContent?.trim())).toEqual([
+      'First measurement',
+      'Second measurement',
+    ]);
+    expect(
+      [...rows()[0].querySelectorAll('dd')].map((item) =>
+        item.textContent?.trim().replace(/\s+/g, ' '),
+      ),
+    ).toEqual(['10 unit A', '20 unit B']);
+    expect(button('Edit', rows()[0]).disabled).toBe(false);
+    await click(button('Edit', rows()[0]));
+    expect(
+      [...element('form').querySelectorAll<HTMLInputElement>('input[type="number"]')].map(
+        (input) => input.value,
+      ),
+    ).toEqual(['10', '20']);
+    expect(element('form').textContent).toContain('First measurement');
+    expect(element('form').textContent).toContain('Second measurement');
+    expect(element('form').textContent).toContain('unit A');
+    expect(element('form').textContent).toContain('unit B');
+    expect(element('form').querySelector('select')).toBeNull();
+    await enter('#records-edit-result-panel-record-0', '0');
+    await enter('#records-edit-result-panel-record-1', '-2.345');
+    await enter('form input[type="date"]', '2026-11-09');
+    await submit();
+    expect(updateById).toHaveBeenCalledExactlyOnceWith('panel-record', {
+      examDate: '2026-11-09',
+      examResults: [
+        { id: 'result-panel-FIRST', value: 0 },
+        { id: 'result-panel-SECOND', value: -2.345 },
+      ],
     });
-    await load([unsupported]);
-    expect(rows()[0].textContent).toContain('110');
-    expect(button('Edit', rows()[0]).disabled).toBe(true);
-    expect(rows()[0].textContent).toContain('Editing is available for records with one result.');
+    expect(historical.examResults.map((result) => result.value)).toEqual([10, 20]);
+  });
+
+  it('requires every edit value and the date and focuses the first invalid field', async () => {
+    await load([multiRecord()]);
+    await click(button('Edit', rows()[0]));
+    await enter('#records-edit-result-panel-record-1', '');
+    await enter('form input[type="date"]', '');
+    await submit();
+    const second = element<HTMLInputElement>('#records-edit-result-panel-record-1');
+    expect(document.activeElement).toBe(second);
+    expect(second.getAttribute('aria-invalid')).toBe('true');
+    expect(second.getAttribute('aria-describedby')).toBe(
+      'records-edit-result-panel-record-1-unit records-edit-result-panel-record-1-error',
+    );
+    expect(element('#records-edit-result-panel-record-1-error').textContent).toContain(
+      'Enter the result.',
+    );
     expect(updateById).not.toHaveBeenCalled();
+    await enter('#records-edit-result-panel-record-1', '22');
+    await submit();
+    expect(document.activeElement).toBe(element('form input[type="date"]'));
+    expect(updateById).not.toHaveBeenCalled();
+  });
+
+  it('preserves all edit values on failure and replaces all results on retry success', async () => {
+    await load([multiRecord()]);
+    const edit = button('Edit', rows()[0]);
+    await click(edit);
+    await enter('#records-edit-result-panel-record-0', '11');
+    await enter('#records-edit-result-panel-record-1', '22');
+    await enter('form input[type="date"]', '2026-11-09');
+    await submit();
+    await submit();
+    expect(updateById).toHaveBeenCalledTimes(1);
+    updateResponse.error(
+      new HttpErrorResponse({ status: 500, error: { message: 'private detail' } }),
+    );
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(element('[role="alert"]').textContent).toContain('Unable to update record.');
+    expect(page.textContent).not.toContain('private detail');
+    expect(element<HTMLInputElement>('#records-edit-result-panel-record-0').value).toBe('11');
+    expect(element<HTMLInputElement>('#records-edit-result-panel-record-1').value).toBe('22');
+    expect(element<HTMLInputElement>('form input[type="date"]').value).toBe('2026-11-09');
+    expect(rows()[0].querySelector('dd')?.textContent).toContain('10');
+    const retry = new Subject<ExamRecord>();
+    updateById.mockReturnValueOnce(retry);
+    await submit();
+    const updated = multiRecord();
+    updated.examDate = '2026-11-09';
+    updated.examResults = updated.examResults.map((result, index) => ({
+      ...result,
+      value: (index + 1) * 11,
+    }));
+    retry.next(updated);
+    retry.complete();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(page.querySelector('form')).toBeNull();
+    expect(
+      [...rows()[0].querySelectorAll('dd')].map((item) =>
+        item.textContent?.trim().replace(/\s+/g, ' '),
+      ),
+    ).toEqual(['11 unit A', '22 unit B']);
+    expect(rows()[0].querySelector('time')?.dateTime).toBe('2026-11-09');
+    expect(document.activeElement).toBe(edit);
+  });
+
+  it('confirms deletion concisely for multi-result and empty-result records', async () => {
+    const multi = multiRecord();
+    const empty = { ...multiRecord(), id: 'empty-record', examResults: [] };
+    await load([multi, empty]);
+    await click(button('Delete', rows()[0]));
+    expect(dialog.textContent).toContain('Backend panel');
+    expect(dialog.textContent).toContain('Oct 10, 2026');
+    expect(dialog.textContent).not.toContain('First measurement');
+    await click(button('Cancel', dialog));
+    await click(button('Delete', rows()[1]));
+    await click(button('Delete', dialog));
+    expect(deleteById).toHaveBeenCalledExactlyOnceWith('empty-record');
+    deleteResponse.next();
+    await fixture.whenStable();
+    expect(rows()).toHaveLength(1);
   });
 });

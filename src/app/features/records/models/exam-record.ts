@@ -1,12 +1,12 @@
-import { ExamType } from './exam-type';
-import { ExamTypeCode } from './exam-type-code';
+import { ExamResultSchemaReference } from './exam-result-schema-reference';
+import { ExamTypeReference } from './exam-type-reference';
 import { ExamResult } from './exam-result';
 
 export interface ExamRecord {
   id: string;
   userId: string;
-  // Preserve the legacy record response until records migrate to result schemas.
-  examType: Omit<ExamType, 'code' | 'resultSchemas'> & { code: ExamTypeCode };
+  examType: ExamTypeReference;
+  examResultSchema: ExamResultSchemaReference;
   examDate: string;
   createdAt: string;
   examResults: ExamResult[];

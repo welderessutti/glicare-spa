@@ -12,19 +12,25 @@ import { ExamTypeCode, EXAM_UI_CONFIG } from '../../../records/models/exam-type-
 import { Dashboard } from './dashboard';
 
 function record(id: string, code: ExamTypeCode, value: number, examDate: string): ExamRecord {
+  const resultDefinition = {
+    id: `definition-${code}`,
+    code: 'RESULT',
+    label: EXAM_UI_CONFIG[code].resultLabel,
+    unit: EXAM_UI_CONFIG[code].unit,
+    active: true,
+  };
   return {
     id,
     userId: 'test-user',
     createdAt: '2026-11-05T12:00:00Z',
-    examDate,
-    examType: { id: code, code, name: EXAM_UI_CONFIG[code].label, active: true },
+    examDate: examDate,
+    examType: { code, name: EXAM_UI_CONFIG[code].label },
+    examResultSchema: { code: 'STANDARD', name: 'Standard', active: true },
     examResults: [
       {
         id: `result-${id}`,
-        examRecordId: id,
-        label: EXAM_UI_CONFIG[code].resultLabel,
+        resultDefinition,
         value,
-        unit: EXAM_UI_CONFIG[code].unit,
       },
     ],
   };

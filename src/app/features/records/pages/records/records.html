@@ -245,7 +245,14 @@
   }
 
   <section aria-labelledby="records-results-title" [attr.aria-busy]="loadingExamRecords()">
-    <h2 id="records-results-title" class="text-lg font-semibold tracking-tight">Your results</h2>
+    <h2
+      #recordsTitle
+      id="records-results-title"
+      tabindex="-1"
+      class="text-lg font-semibold tracking-tight"
+    >
+      Your results
+    </h2>
     @if (loadingExamRecords()) {
       <div class="flex gap-1 mt-4">
         <svg
@@ -283,29 +290,42 @@
             <div
               class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
             >
-              <div class="flex min-w-0 items-center justify-between gap-4 sm:flex-1">
+              <div
+                class="flex min-w-0 flex-col gap-3 sm:flex-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+              >
                 <div class="min-w-0">
                   <h3 [id]="'records-date-' + record.id" class="text-base font-medium">
                     <time [attr.datetime]="record.examDate">{{
                       record.examDate | date: 'MMM dd, yyyy'
                     }}</time>
                   </h3>
-                  <p class="mt-1 text-sm text-text-secondary">{{ record.examType.name }}</p>
+                  <p class="mt-1 text-sm text-text-secondary">
+                    {{ record.examType.name }}
+                  </p>
                 </div>
-                <p
-                  class="flex shrink-0 items-baseline gap-1 text-xl font-semibold tracking-tight tabular-nums"
-                >
-                  {{ record.examResults[0].value
-                  }}<span class="text-sm font-medium text-text-secondary">{{
-                    record.examResults[0].unit
-                  }}</span>
-                </p>
+                <dl class="grid min-w-0 gap-2">
+                  @for (result of record.examResults; track result.id) {
+                    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <dt class="text-sm text-text-secondary">
+                        {{ result.resultDefinition.label }}
+                      </dt>
+                      <dd
+                        class="flex flex-wrap items-baseline gap-1 text-xl font-semibold tracking-tight tabular-nums"
+                      >
+                        {{ result.value }}
+                        <span class="text-sm font-medium text-text-secondary">{{
+                          result.resultDefinition.unit
+                        }}</span>
+                      </dd>
+                    </div>
+                  }
+                </dl>
               </div>
               <div class="flex gap-2">
                 <button
                   #editButton
                   type="button"
-                  (click)="openEditExamRecordForm(record)"
+                  (click)="openEditExamRecordForm(record, editButton)"
                   [disabled]="editExamRecordForm().submitting()"
                   [attr.aria-expanded]="editingExamRecord()?.id === record.id"
                   [attr.aria-controls]="
@@ -349,32 +369,38 @@
                 <h4 [id]="'records-edit-title-' + record.id" class="font-medium">Edit result</h4>
                 <fieldset [disabled]="editExamRecordForm().submitting()" class="min-w-0 space-y-5">
                   <legend class="sr-only">{{ record.examType.name }} result</legend>
-                  <div class="space-y-2">
-                    <label
-                      [for]="'records-edit-result-' + record.id"
-                      class="inline-flex text-sm font-medium"
-                      >Result ({{ record.examResults[0].unit }})</label
-                    >
-                    <input
-                      [id]="'records-edit-result-' + record.id"
-                      [formField]="editExamRecordForm.value"
-                      type="number"
-                      inputmode="decimal"
-                      step="any"
-                      [attr.aria-invalid]="examResultValueInvalid()"
-                      [attr.aria-describedby]="
-                        examResultValueInvalid() ? 'records-edit-result-error' : null
-                      "
-                      class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
-                    />
-                    @if (examResultValueInvalid()) {
-                      <ul id="records-edit-result-error" class="text-sm text-error">
-                        @for (error of editExamRecordForm.value().errors(); track error.kind) {
-                          <li>{{ error.message ?? 'Enter a valid number.' }}</li>
-                        }
-                      </ul>
-                    }
-                  </div>
+                  @for (result of editExamRecordForm.examResults; track result) {
+                    @let definition = record.examResults[$index].resultDefinition;
+                    @let fieldId = 'records-edit-result-' + record.id + '-' + $index;
+                    @let invalid = result.value().touched() && result.value().invalid();
+                    <div class="space-y-2">
+                      <label [for]="fieldId" class="inline-flex text-sm font-medium">{{
+                        definition.label
+                      }}</label>
+                      <input
+                        [id]="fieldId"
+                        [formField]="result.value"
+                        type="number"
+                        inputmode="decimal"
+                        step="any"
+                        [attr.aria-invalid]="invalid"
+                        [attr.aria-describedby]="
+                          fieldId + '-unit' + (invalid ? ' ' + fieldId + '-error' : '')
+                        "
+                        class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+                      />
+                      <p [id]="fieldId + '-unit'" class="text-sm text-text-secondary">
+                        {{ definition.unit }}
+                      </p>
+                      @if (invalid) {
+                        <ul [id]="fieldId + '-error'" class="text-sm text-error">
+                          @for (error of result.value().errors(); track error.kind) {
+                            <li>{{ error.message ?? 'Enter a valid number.' }}</li>
+                          }
+                        </ul>
+                      }
+                    </div>
+                  }
                   <div class="space-y-2">
                     <label
                       [for]="'records-edit-date-' + record.id"
@@ -483,8 +509,7 @@
     <h2 id="records-delete-title" class="text-lg font-semibold tracking-tight">Delete record?</h2>
     <p id="records-delete-description" class="mt-3 text-sm leading-relaxed text-text-secondary">
       @if (examRecordToDelete(); as record) {
-        Delete the {{ record.examType.name }} record of {{ record.examResults[0].value }}
-        {{ record.examResults[0].unit }} from
+        Delete the {{ record.examType.name }} record from
         <time [attr.datetime]="record.examDate">{{ record.examDate | date: 'MMM dd, yyyy' }}</time
         >? This action cannot be undone.
       }

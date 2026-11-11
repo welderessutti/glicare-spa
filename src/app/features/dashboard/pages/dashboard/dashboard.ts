@@ -19,7 +19,9 @@ export class Dashboard implements OnInit {
   private readonly examRecordsService = inject(ExamRecordsService);
 
   protected readonly appNavigation = APP_NAVIGATION;
-  protected readonly examUi = EXAM_UI_CONFIG;
+  // Keep the existing lookup behavior until Dashboard migrates to the catalog.
+  protected readonly examUi: typeof EXAM_UI_CONFIG &
+    Record<string, (typeof EXAM_UI_CONFIG)[keyof typeof EXAM_UI_CONFIG]> = EXAM_UI_CONFIG;
   protected readonly latestHba1c = signal<ExamRecord | null>(null);
   protected readonly latestGlucose = signal<ExamRecord | null>(null);
   protected readonly recentRecords = signal<ExamRecord[]>([]);

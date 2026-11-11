@@ -7,19 +7,25 @@ import { ExamTypeCode, EXAM_UI_CONFIG } from '../../../records/models/exam-type-
 import { Trends } from './trends';
 
 function record(id: string, code: ExamTypeCode, value: number, date: string): ExamRecord {
+  const resultDefinition = {
+    id: `definition-${code}`,
+    code: 'RESULT',
+    label: EXAM_UI_CONFIG[code].resultLabel,
+    unit: EXAM_UI_CONFIG[code].unit,
+    active: true,
+  };
   return {
     id,
     userId: 'server-user',
     createdAt: '2026-10-28T10:00:00Z',
     examDate: date,
-    examType: { id: code, code, name: EXAM_UI_CONFIG[code].label, active: true },
+    examType: { code, name: EXAM_UI_CONFIG[code].label },
+    examResultSchema: { code: 'STANDARD', name: 'Standard', active: true },
     examResults: [
       {
         id: `result-${id}`,
-        examRecordId: id,
-        label: 'Result',
+        resultDefinition,
         value,
-        unit: EXAM_UI_CONFIG[code].unit,
       },
     ],
   };

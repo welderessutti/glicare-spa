@@ -17,6 +17,7 @@ import { ExamType } from '../../models/exam-type';
 import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
 import { CreateExamResultRequest } from '../../models/requests/create-exam-result-request';
 import { UpdateExamRecordRequest } from '../../models/requests/update-exam-record-request';
+import { UpdateExamResultRequest } from '../../models/requests/update-exam-result-request';
 import { ExamRecordsService } from '../../services/exam-records-service';
 import { ExamTypesService } from '../../services/exam-types-service';
 
@@ -36,8 +37,11 @@ export class Records implements OnInit {
     examDate: string;
     examResults: { resultDefinitionCode: string; value: number | null }[];
   }>({ examTypeCode: '', examResultSchemaCode: '', examDate: '', examResults: [] });
-  private readonly updateExamRecordModel = signal<{ value: number | null; examDate: string }>({
-    value: null,
+  private readonly updateExamRecordModel = signal<{
+    examResults: { id: string; value: number | null }[];
+    examDate: string;
+  }>({
+    examResults: [],
     examDate: '',
   });
 
@@ -70,6 +74,8 @@ export class Records implements OnInit {
   private readonly addButton = viewChild<ElementRef<HTMLButtonElement>>('addButton');
   private readonly createExamType = viewChild<ElementRef<HTMLSelectElement>>('createExamType');
   private readonly createTitle = viewChild<ElementRef<HTMLHeadingElement>>('createTitle');
+  private readonly recordsTitle = viewChild<ElementRef<HTMLHeadingElement>>('recordsTitle');
+  private editTrigger: HTMLButtonElement | undefined;
 
   protected readonly examTypeCodeInvalid = computed(
     () =>
@@ -87,10 +93,6 @@ export class Records implements OnInit {
     () =>
       this.createExamRecordForm.examDate().touched() &&
       this.createExamRecordForm.examDate().invalid(),
-  );
-
-  protected readonly examResultValueInvalid = computed(
-    () => this.editExamRecordForm.value().touched() && this.editExamRecordForm.value().invalid(),
   );
 
   protected readonly examRecordDateInvalid = computed(
@@ -157,19 +159,26 @@ export class Records implements OnInit {
   protected readonly editExamRecordForm = form(
     this.updateExamRecordModel,
     (path) => {
-      required(path.value, { message: 'Enter the result.' });
+      applyEach(path.examResults, (result) => {
+        required(result.value, { message: 'Enter the result.' });
+      });
       required(path.examDate, { message: 'Enter the exam date.' });
     },
     {
       submission: {
         action: async (field) => {
           const record = this.editingExamRecord();
-          const { value, examDate } = field().value();
-          if (!record || value === null) return;
+          const model = field().value();
+          if (!record) return;
+          const examResults: UpdateExamResultRequest[] = [];
+          for (const result of model.examResults) {
+            if (result.value === null) return;
+            examResults.push({ id: result.id, value: result.value });
+          }
           this.updateExamRecordErrorMessage.set('');
           const request: UpdateExamRecordRequest = {
-            examDate,
-            examResults: [{ id: record.examResults[0].id, value }],
+            examDate: model.examDate,
+            examResults,
           };
           try {
             const updated = await firstValueFrom(
@@ -179,7 +188,8 @@ export class Records implements OnInit {
               records.map((current) => (current.id === updated.id ? updated : current)),
             );
             this.editingExamRecord.set(null);
-            this.editExamRecordForm().reset({ value: null, examDate: '' });
+            this.editExamRecordForm().reset({ examResults: [], examDate: '' });
+            afterNextRender(() => this.editTrigger?.focus(), { injector: this.injector });
           } catch {
             this.updateExamRecordErrorMessage.set('Unable to update record.');
           }
@@ -283,14 +293,25 @@ export class Records implements OnInit {
     );
   }
 
-  protected openEditExamRecordForm(record: ExamRecord): void {
+  protected openEditExamRecordForm(record: ExamRecord, editButton: HTMLButtonElement): void {
+    this.editTrigger = editButton;
     this.editExamRecordForm().reset({
-      value: record.examResults[0].value,
+      examResults: record.examResults.map((result) => ({ id: result.id, value: result.value })),
       examDate: record.examDate,
     });
     this.updateExamRecordErrorMessage.set('');
     this.editingExamRecord.set(record);
     if (this.createExamRecordFormOpen) this.createExamRecordFormOpen.set(false);
+    afterNextRender(
+      () => {
+        for (const result of this.editExamRecordForm.examResults) {
+          result.value().focusBoundControl();
+          return;
+        }
+        this.editExamRecordForm.examDate().focusBoundControl();
+      },
+      { injector: this.injector },
+    );
   }
 
   protected closeEditExamRecordFormWithFocus(editButton: HTMLButtonElement): void {
@@ -316,6 +337,9 @@ export class Records implements OnInit {
         this.deleting.set(false);
         dialog.close();
         this.examRecordToDelete.set(null);
+        afterNextRender(() => this.recordsTitle()?.nativeElement.focus(), {
+          injector: this.injector,
+        });
       },
       error: () => {
         this.deleting.set(false);

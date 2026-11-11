@@ -1,7 +1,7 @@
+import { ExamResultDefinition } from './exam-result-definition';
+
 export interface ExamResult {
   id: string;
-  examRecordId: string;
-  label: string;
+  resultDefinition: ExamResultDefinition;
   value: number;
-  unit: string;
 }

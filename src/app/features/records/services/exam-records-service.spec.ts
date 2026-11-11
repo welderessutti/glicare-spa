@@ -11,6 +11,28 @@ describe('ExamRecordsService', () => {
   let service: ExamRecordsService;
   let http: HttpTestingController;
   const url = `${API_URL}/exam-records`;
+  const definition = {
+    id: 'definition-panel-first',
+    code: 'FIRST',
+    label: 'First measurement',
+    unit: 'unit A',
+    active: true,
+  };
+  const record: ExamRecord = {
+    id: 'record-panel',
+    userId: 'user-001',
+    examDate: '2026-10-20',
+    createdAt: '2026-10-20T12:00:00Z',
+    examType: { code: 'PANEL', name: 'Synthetic panel' },
+    examResultSchema: { code: 'STANDARD', name: 'Standard', active: true },
+    examResults: [
+      {
+        id: 'result-panel-first',
+        resultDefinition: definition,
+        value: 6.5,
+      },
+    ],
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -26,7 +48,7 @@ describe('ExamRecordsService', () => {
     let response: ExamRecord[] | undefined;
     service
       .getAll({
-        type: 'GLU',
+        type: 'PANEL',
         date: '2026-10-20',
         result: 0,
         page: 0,
@@ -47,40 +69,77 @@ describe('ExamRecordsService', () => {
       'sort',
       'type',
     ]);
-    expect(request.request.params.get('type')).toBe('GLU');
+    expect(request.request.params.get('type')).toBe('PANEL');
     expect(request.request.params.get('date')).toBe('2026-10-20');
     expect(request.request.params.get('result')).toBe('0');
     expect(request.request.params.get('page')).toBe('0');
     expect(request.request.params.get('size')).toBe('20');
     expect(request.request.params.get('sort')).toBe('examDate,desc');
-    request.flush([]);
-    expect(response).toEqual([]);
+    request.flush([record]);
+    expect(response).toEqual([record]);
+  });
+
+  it('reads a record with its schema, exam type and historical result definitions', () => {
+    const inactiveDefinition = { ...definition, active: false };
+    const historical: ExamRecord = {
+      ...record,
+      examResultSchema: {
+        ...record.examResultSchema,
+        active: false,
+      },
+      examResults: [
+        {
+          id: 'historical-result',
+          resultDefinition: inactiveDefinition,
+          value: 7,
+        },
+      ],
+    };
+    let response: ExamRecord | undefined;
+    service.getById(record.id).subscribe((value) => {
+      response = value;
+    });
+    const request = http.expectOne(`${url}/${record.id}`);
+    expect(request.request.method).toBe('GET');
+    request.flush(historical);
+    expect(response).toEqual(historical);
   });
 
   it('creates using only the provided creation DTO', () => {
     const body: CreateExamRecordRequest = {
-      examTypeCode: 'HBA1C',
+      examTypeCode: 'PANEL',
       examResultSchemaCode: 'STANDARD',
       examDate: '2026-10-20',
-      examResults: [{ resultDefinitionCode: 'RESULT', value: 6.5 }],
+      examResults: [{ resultDefinitionCode: 'FIRST', value: 6.5 }],
     };
-    service.create(body).subscribe();
+    let response: ExamRecord | undefined;
+    service.create(body).subscribe((value) => {
+      response = value;
+    });
     const request = http.expectOne(url);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(body);
-    request.flush({});
+    request.flush(record);
+    expect(response).toEqual(record);
   });
 
   it('updates by the exam record ID using the existing result-ID contract', () => {
     const body: UpdateExamRecordRequest = {
       examDate: '2026-10-20',
-      examResults: [{ id: 'server-result-id', value: 112 }],
+      examResults: [
+        { id: 'server-result-id', value: 112 },
+        { id: 'second-result-id', value: 0 },
+      ],
     };
-    service.updateById('server-record-id', body).subscribe();
+    let response: ExamRecord | undefined;
+    service.updateById('server-record-id', body).subscribe((value) => {
+      response = value;
+    });
     const request = http.expectOne(`${url}/server-record-id`);
     expect(request.request.method).toBe('PUT');
     expect(request.request.body).toEqual(body);
-    request.flush({});
+    request.flush(record);
+    expect(response).toEqual(record);
   });
 
   it('deletes only by the exam record ID without a request body', () => {

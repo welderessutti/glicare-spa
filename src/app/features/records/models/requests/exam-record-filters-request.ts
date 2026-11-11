@@ -1,7 +1,5 @@
-import { ExamTypeCode } from '../exam-type-code';
-
 export interface ExamRecordFiltersRequest {
-  type?: ExamTypeCode;
+  type?: string;
   date?: string;
   result?: number;
   page?: number;
