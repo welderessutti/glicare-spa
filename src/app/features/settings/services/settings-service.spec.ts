@@ -9,12 +9,8 @@ describe('SettingsService', () => {
   let service: SettingsService;
   let http: HttpTestingController;
   const settings: Settings = {
-    defaultTrendsExam: 'GLU',
+    defaultTrendsExam: 'PANEL',
     language: 'en',
-    hba1cReminderEnabled: false,
-    hba1cReminderInterval: 3,
-    glucoseReminderEnabled: true,
-    glucoseReminderInterval: 1,
   };
 
   beforeEach(() => {

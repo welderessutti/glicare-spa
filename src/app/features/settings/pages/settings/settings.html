@@ -6,74 +6,93 @@
     </p>
   </header>
 
-  @if (loading()) {
-    <div class="flex gap-1">
-      <svg
-        class="size-5 animate-spin motion-reduce:animate-none"
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
-        <path
-          d="M12 3a9 9 0 0 1 9 9"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
+  @if (loadingCatalog() || catalogError()) {
+    <section aria-label="Exam catalog" [attr.aria-busy]="loadingCatalog()" class="space-y-3">
+      @if (loadingCatalog()) {
+        <p role="status" class="text-sm text-text-secondary">Loading exam types…</p>
+      } @else {
+        <p role="alert" class="text-sm text-error">{{ catalogError() }}</p>
+        <button
+          type="button"
+          (click)="loadExamTypes()"
+          class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover"
+        >
+          Try again<span class="sr-only"> loading exam types</span>
+        </button>
+      }
+    </section>
+  }
+
+  <section
+    aria-labelledby="settings-preferences-title"
+    [attr.aria-busy]="loading()"
+    class="space-y-5 border-t border-border pt-6"
+  >
+    <h2 id="settings-preferences-title" class="text-lg font-semibold tracking-tight">
+      Preferences
+    </h2>
+    @if (loading()) {
       <p role="status" class="text-sm text-text-secondary">Loading your settings…</p>
-    </div>
-  } @else if (loadError()) {
-    <div class="space-y-3">
+    } @else if (loadError()) {
       <p role="alert" class="text-sm text-error">{{ loadError() }}</p>
       <button
         type="button"
         (click)="loadSettings()"
-        class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover sm:w-auto"
+        class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover"
       >
-        Try again
+        Try again<span class="sr-only"> loading preferences</span>
       </button>
-    </div>
-  } @else if (settings()) {
-    <form
-      [formRoot]="settingsForm"
-      aria-labelledby="settings-title"
-      [attr.aria-busy]="settingsForm().submitting()"
-      class="space-y-8 sm:space-y-10"
-    >
-      <fieldset [disabled]="settingsForm().submitting()" class="min-w-0 space-y-8 sm:space-y-10">
-        <legend class="sr-only">Settings</legend>
-
-        <section aria-labelledby="settings-preferences-title" class="border-t border-border pt-6">
-          <h2 id="settings-preferences-title" class="text-lg font-semibold tracking-tight">
-            Preferences
-          </h2>
-          <div class="mt-5 space-y-2">
-            <label for="settings-default-exam" class="inline-flex text-sm font-medium">
-              Default Trends exam
-            </label>
+    } @else if (settings()) {
+      @let defaultInvalid =
+        settingsForm.defaultTrendsExam().touched() && settingsForm.defaultTrendsExam().invalid();
+      <form
+        id="settings-preferences-form"
+        [formRoot]="settingsForm"
+        aria-labelledby="settings-preferences-title"
+        [attr.aria-busy]="settingsForm().submitting()"
+        class="space-y-5"
+      >
+        <fieldset [disabled]="settingsForm().submitting()" class="min-w-0 space-y-5">
+          <legend class="sr-only">General preferences</legend>
+          <div class="space-y-2">
+            <label for="settings-default-exam" class="inline-flex text-sm font-medium"
+              >Default Trends exam</label
+            >
             <p id="settings-default-exam-hint" class="text-sm text-text-secondary">
               Choose which exam appears first when opening Trends.
             </p>
             <select
               id="settings-default-exam"
               [formField]="settingsForm.defaultTrendsExam"
-              aria-describedby="settings-default-exam-hint"
+              [attr.aria-invalid]="defaultInvalid"
+              [attr.aria-describedby]="
+                'settings-default-exam-hint' +
+                (defaultInvalid ? ' settings-default-exam-error' : '')
+              "
               class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface sm:max-w-sm"
             >
-              @for (type of examTypes; track type[0]) {
-                <option [value]="type[0]">{{ type[1].label }}</option>
+              <option value="" disabled>Choose an exam</option>
+              @if (unavailableDefault(); as current) {
+                <option [value]="current.code" disabled>{{ current.name }}</option>
+              }
+              @for (type of activeExamTypes(); track type.code) {
+                <option [value]="type.code">{{ type.name }}</option>
               }
             </select>
+            @if (defaultInvalid) {
+              <ul id="settings-default-exam-error" class="text-sm text-error">
+                @for (error of settingsForm.defaultTrendsExam().errors(); track error.kind) {
+                  <li>{{ error.message }}</li>
+                }
+              </ul>
+            }
+            @if (!loadingCatalog() && !catalogError() && !activeExamTypes().length) {
+              <p class="text-sm text-text-secondary">
+                No active exams are available for a new default.
+              </p>
+            }
           </div>
-        </section>
-
-        <section aria-labelledby="settings-language-title" class="border-t border-border pt-6">
-          <h2 id="settings-language-title" class="text-lg font-semibold tracking-tight">
-            Language
-          </h2>
-          <div class="mt-5 space-y-2">
+          <div class="space-y-2">
             <label for="settings-language" class="inline-flex text-sm font-medium">Language</label>
             <p id="settings-language-hint" class="text-sm text-text-secondary">
               Choose the language used across Glicare.
@@ -87,97 +106,7 @@
               <option value="en">English</option>
             </select>
           </div>
-        </section>
-
-        <section aria-labelledby="settings-reminders-title" class="border-t border-border pt-6">
-          <h2 id="settings-reminders-title" class="text-lg font-semibold tracking-tight">
-            Exam reminders
-          </h2>
-          <p class="mt-2 text-sm leading-relaxed text-text-secondary">
-            Choose if and how often Glicare should remind you about your exams.
-          </p>
-
-          <div class="mt-5 space-y-6">
-            <fieldset class="min-w-0 space-y-3">
-              <legend class="mb-2 text-sm font-semibold">{{ examUi.HBA1C.label }}</legend>
-              <label
-                for="settings-hba1c-reminder"
-                class="flex min-h-12 cursor-pointer items-center justify-between gap-3 sm:max-w-sm"
-              >
-                <span class="text-sm font-medium">Reminder</span>
-                <input
-                  id="settings-hba1c-reminder"
-                  type="checkbox"
-                  [formField]="settingsForm.hba1cReminderEnabled"
-                  class="size-5 shrink-0 cursor-pointer accent-accent"
-                />
-              </label>
-              <div class="space-y-2">
-                <label for="settings-hba1c-interval" class="inline-flex text-sm font-medium">
-                  Remind me every
-                </label>
-                <select
-                  #hba1cInterval
-                  id="settings-hba1c-interval"
-                  [disabled]="settingsForm.hba1cReminderInterval().disabled()"
-                  (change)="settingsForm.hba1cReminderInterval().value.set(+hba1cInterval.value)"
-                  class="block min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted sm:max-w-sm"
-                >
-                  @for (months of reminderIntervals; track months) {
-                    <option
-                      [value]="months"
-                      [selected]="months === settingsForm.hba1cReminderInterval().value()"
-                    >
-                      {{ months }} {{ months === 1 ? 'month' : 'months' }}
-                    </option>
-                  }
-                </select>
-              </div>
-            </fieldset>
-
-            <fieldset class="min-w-0 space-y-3">
-              <legend class="mb-2 text-sm font-semibold">{{ examUi.GLU.label }}</legend>
-              <label
-                for="settings-glucose-reminder"
-                class="flex min-h-12 cursor-pointer items-center justify-between gap-3 sm:max-w-sm"
-              >
-                <span class="text-sm font-medium">Reminder</span>
-                <input
-                  id="settings-glucose-reminder"
-                  type="checkbox"
-                  [formField]="settingsForm.glucoseReminderEnabled"
-                  class="size-5 shrink-0 cursor-pointer accent-accent"
-                />
-              </label>
-              <div class="space-y-2">
-                <label for="settings-glucose-interval" class="inline-flex text-sm font-medium">
-                  Remind me every
-                </label>
-                <select
-                  #glucoseInterval
-                  id="settings-glucose-interval"
-                  [disabled]="settingsForm.glucoseReminderInterval().disabled()"
-                  (change)="
-                    settingsForm.glucoseReminderInterval().value.set(+glucoseInterval.value)
-                  "
-                  class="block min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted sm:max-w-sm"
-                >
-                  @for (months of reminderIntervals; track months) {
-                    <option
-                      [value]="months"
-                      [selected]="months === settingsForm.glucoseReminderInterval().value()"
-                    >
-                      {{ months }} {{ months === 1 ? 'month' : 'months' }}
-                    </option>
-                  }
-                </select>
-              </div>
-            </fieldset>
-          </div>
-        </section>
-      </fieldset>
-
-      <div class="space-y-3 border-t border-border pt-6">
+        </fieldset>
         @if (updateError()) {
           <p role="alert" class="text-sm text-error">{{ updateError() }}</p>
         }
@@ -186,42 +115,246 @@
         }
         <button
           type="submit"
-          [disabled]="settingsForm().submitting()"
-          class="flex min-h-12 gap-1 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait sm:w-auto"
+          [disabled]="settingsForm().submitting() || !settingsForm.defaultTrendsExam().value()"
+          class="min-h-12 w-full cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait sm:w-auto"
         >
-          @if (settingsForm().submitting()) {
-            <svg
-              class="size-5 animate-spin motion-reduce:animate-none"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                stroke="currentColor"
-                stroke-width="2"
-                class="opacity-25"
-              />
-              <path
-                d="M12 3a9 9 0 0 1 9 9"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /></svg
-            ><span>Saving…</span>
-          } @else {
-            <span>Save changes</span>
-          }
+          {{ settingsForm().submitting() ? 'Saving…' : 'Save changes' }}
         </button>
-      </div>
-    </form>
-  }
-
-  <p role="status" aria-atomic="true" class="sr-only">
-    @if (settingsForm().submitting()) {
-      Saving your settings. Please wait.
+      </form>
     }
-  </p>
+  </section>
+
+  <section
+    aria-labelledby="settings-reminders-title"
+    [attr.aria-busy]="loadingReminders()"
+    class="space-y-5 border-t border-border pt-6"
+  >
+    <h2
+      #remindersTitle
+      id="settings-reminders-title"
+      tabindex="-1"
+      class="text-lg font-semibold tracking-tight"
+    >
+      Exam reminders
+    </h2>
+    <p class="text-sm leading-relaxed text-text-secondary">
+      Pause a reminder by clearing Enabled, or delete it to remove its schedule.
+    </p>
+    @if (!createReminderOpen()) {
+      <button
+        #addButton
+        type="button"
+        (click)="openCreateReminder()"
+        [disabled]="!canAddReminder()"
+        aria-expanded="false"
+        class="min-h-12 w-full cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+      >
+        Add reminder
+      </button>
+    }
+    @if (
+      !loadingCatalog() &&
+      !catalogError() &&
+      !loadingReminders() &&
+      !remindersError() &&
+      !availableReminderTypes().length
+    ) {
+      <p role="status" class="text-sm text-text-secondary">
+        No active exams are available for a new reminder.
+      </p>
+    }
+    @if (createReminderOpen()) {
+      @let examInvalid =
+        createReminderForm.examTypeCode().touched() && createReminderForm.examTypeCode().invalid();
+      @let intervalInvalid =
+        createReminderForm.intervalValue().touched() &&
+        createReminderForm.intervalValue().invalid();
+      @let unitInvalid =
+        createReminderForm.intervalUnit().touched() && createReminderForm.intervalUnit().invalid();
+      <div
+        id="settings-add-reminder"
+        class="rounded-xl border border-border bg-surface-raised p-4 sm:p-5"
+      >
+        <h3 id="settings-add-reminder-title" class="font-semibold">Add reminder</h3>
+        <form
+          id="settings-create-reminder-form"
+          [formRoot]="createReminderForm"
+          aria-labelledby="settings-add-reminder-title"
+          [attr.aria-busy]="createReminderForm().submitting()"
+          class="mt-4 space-y-5"
+        >
+          <fieldset
+            [disabled]="createReminderForm().submitting() || !canAddReminder()"
+            class="min-w-0 space-y-4"
+          >
+            <legend class="sr-only">New reminder</legend>
+            <div class="space-y-2">
+              <label for="settings-reminder-exam" class="inline-flex text-sm font-medium"
+                >Exam</label
+              >
+              <select
+                #createExamSelect
+                id="settings-reminder-exam"
+                [formField]="createReminderForm.examTypeCode"
+                [attr.aria-invalid]="examInvalid"
+                [attr.aria-describedby]="examInvalid ? 'settings-reminder-exam-error' : null"
+                class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+              >
+                <option value="">Choose an exam</option>
+                @for (type of availableReminderTypes(); track type.code) {
+                  <option [value]="type.code">{{ type.name }}</option>
+                }
+              </select>
+              @if (examInvalid) {
+                <ul id="settings-reminder-exam-error" class="text-sm text-error">
+                  @for (error of createReminderForm.examTypeCode().errors(); track error.kind) {
+                    <li>{{ error.message }}</li>
+                  }
+                </ul>
+              }
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <label for="settings-reminder-value" class="inline-flex text-sm font-medium"
+                  >Remind me every</label
+                >
+                <input
+                  id="settings-reminder-value"
+                  type="number"
+                  step="1"
+                  inputmode="numeric"
+                  [formField]="createReminderForm.intervalValue"
+                  [attr.aria-invalid]="intervalInvalid"
+                  [attr.aria-describedby]="intervalInvalid ? 'settings-reminder-value-error' : null"
+                  class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+                />
+                @if (intervalInvalid) {
+                  <ul id="settings-reminder-value-error" class="text-sm text-error">
+                    @for (error of createReminderForm.intervalValue().errors(); track error.kind) {
+                      <li>{{ error.message ?? 'Enter a valid number.' }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+              <div class="space-y-2">
+                <label for="settings-reminder-unit" class="inline-flex text-sm font-medium"
+                  >Interval unit</label
+                >
+                <select
+                  id="settings-reminder-unit"
+                  [formField]="createReminderForm.intervalUnit"
+                  [attr.aria-invalid]="unitInvalid"
+                  [attr.aria-describedby]="unitInvalid ? 'settings-reminder-unit-error' : null"
+                  class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+                >
+                  @for (option of intervalOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                @if (unitInvalid) {
+                  <ul id="settings-reminder-unit-error" class="text-sm text-error">
+                    @for (error of createReminderForm.intervalUnit().errors(); track error.kind) {
+                      <li>{{ error.message }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          </fieldset>
+          @if (createReminderError()) {
+            <p role="alert" class="text-sm text-error">{{ createReminderError() }}</p>
+          }
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="submit"
+              [disabled]="createReminderForm().submitting() || !canAddReminder()"
+              class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+            >
+              {{ createReminderForm().submitting() ? 'Saving…' : 'Save reminder' }}
+            </button>
+            <button
+              type="button"
+              (click)="closeCreateReminder()"
+              [disabled]="createReminderForm().submitting()"
+              class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+    @if (reminderFeedback()) {
+      <p role="status" aria-atomic="true" class="text-sm text-success">{{ reminderFeedback() }}</p>
+    }
+    @if (loadingReminders()) {
+      <p role="status" class="text-sm text-text-secondary">Loading reminders…</p>
+    } @else if (remindersError()) {
+      <p role="alert" class="text-sm text-error">{{ remindersError() }}</p>
+      <button
+        type="button"
+        (click)="loadReminders()"
+        class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover"
+      >
+        Try again<span class="sr-only"> loading reminders</span>
+      </button>
+    } @else if (reminders().length) {
+      <ul class="divide-y divide-border-light border-y border-border-light">
+        @for (reminder of reminders(); track reminder.id) {
+          <li [id]="'exam-reminder-' + reminder.id" class="py-6">
+            <app-exam-reminder-item
+              [reminder]="reminder"
+              [deleting]="reminderToDelete()?.id === reminder.id"
+              (saved)="reminderSaved($event)"
+              (deleteRequested)="requestDeleteReminder(reminder, $event, deleteDialog)"
+            />
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="text-sm text-text-secondary">No exam reminders yet.</p>
+    }
+  </section>
+
+  <dialog
+    #deleteDialog
+    (close)="deleteDialogClosed()"
+    (cancel)="deleting() ? $event.preventDefault() : null"
+    [attr.aria-busy]="deleting()"
+    aria-labelledby="settings-delete-reminder-title"
+    aria-describedby="settings-delete-reminder-description"
+    class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-xl border border-border bg-surface-raised p-5 text-text-primary backdrop:bg-overlay sm:p-6"
+  >
+    <h2 id="settings-delete-reminder-title" class="text-lg font-semibold">Delete reminder?</h2>
+    <p
+      id="settings-delete-reminder-description"
+      class="mt-3 text-sm leading-relaxed text-text-secondary"
+    >
+      @if (reminderToDelete(); as reminder) {
+        Delete the {{ reminder.examType.name }} reminder? This action cannot be undone.
+      }
+    </p>
+    @if (deleteError()) {
+      <p role="alert" class="mt-3 text-sm text-error">{{ deleteError() }}</p>
+    }
+    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <button
+        type="button"
+        autofocus
+        (click)="deleteDialog.close()"
+        [disabled]="deleting()"
+        class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-5 py-3 text-base font-medium text-text-secondary enabled:hover:bg-surface-hover disabled:cursor-wait"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteReminder(deleteDialog)"
+        [disabled]="deleting()"
+        class="min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
+      >
+        {{ deleting() ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </dialog>
 </div>
