@@ -6,8 +6,83 @@
     </p>
   </header>
 
-  <section aria-labelledby="trends-chart-title" [attr.aria-busy]="loading()">
-    @if (loading()) {
+  <section
+    aria-labelledby="trends-chart-title"
+    [attr.aria-busy]="loadingOptions() || loading() || loadingDefinitions()"
+  >
+    <div class="space-y-2 sm:max-w-sm">
+      <label for="trends-exam-type" class="inline-flex text-sm font-medium">Exam</label>
+      <select
+        #examType
+        id="trends-exam-type"
+        [disabled]="
+          loadingOptions() ||
+          !!loadOptionsError() ||
+          loading() ||
+          loadingDefinitions() ||
+          !examTypes().length
+        "
+        (change)="selectExamType(examType.value)"
+        class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+      >
+        @if (!selectedExamType()) {
+          <option value="" disabled>Choose an exam</option>
+        }
+        @for (type of examTypes(); track type.code) {
+          <option [value]="type.code" [selected]="type.code === selectedExamType()">
+            {{ type.name }}
+          </option>
+        }
+      </select>
+    </div>
+    @if (definitions().length > 1) {
+      <div class="mt-4 space-y-2 sm:max-w-sm">
+        <label for="trends-result-series" class="inline-flex text-sm font-medium">Result</label>
+        <select
+          #resultDefinitionSelect
+          id="trends-result-series"
+          (change)="selectResultDefinition(resultDefinitionSelect.value)"
+          class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary"
+        >
+          @for (definition of definitions(); track definition.code) {
+            <option
+              [value]="definition.code"
+              [selected]="definition.code === selectedResultDefinitionCode()"
+            >
+              {{ definition.label }}
+              @if (definition.unit) {
+                ({{ definition.unit }})
+              }
+            </option>
+          }
+        </select>
+      </div>
+    }
+    <h2 id="trends-chart-title" class="mt-4 text-lg font-semibold tracking-tight">
+      {{ selectedExam()?.name ?? 'Exam' }}
+      @if (selectedResultDefinition(); as definition) {
+        — {{ definition.label }}
+      }
+      trend
+    </h2>
+    @if (loadingOptions()) {
+      <p role="status" class="mt-4 text-sm text-text-secondary">
+        Loading your preferences and exam types…
+      </p>
+    } @else if (loadOptionsError()) {
+      <div class="mt-4 space-y-3">
+        <p role="alert" class="text-sm text-error">{{ loadOptionsError() }}</p>
+        <button
+          type="button"
+          (click)="loadOptions()"
+          class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover sm:w-auto"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (!examTypes().length) {
+      <p class="mt-4 text-sm text-text-secondary">No exams are available.</p>
+    } @else if (loading()) {
       <div class="flex mt-4 gap-1 items-center">
         <svg
           class="size-5 animate-spin motion-reduce:animate-none"
@@ -36,30 +111,29 @@
           Try again
         </button>
       </div>
-    } @else {
-      <div class="space-y-2 sm:max-w-sm">
-        <label for="trends-exam-type" class="inline-flex text-sm font-medium">Exam</label>
-        <select
-          #examType
-          id="trends-exam-type"
-          [value]="selectedExamType()"
-          [disabled]="loading()"
-          (change)="selectExamType(examType.value)"
-          class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+    } @else if (loadingDefinitions()) {
+      <p role="status" class="mt-4 text-sm text-text-secondary">Loading result fields…</p>
+    } @else if (loadDefinitionsError()) {
+      <div class="mt-4 space-y-3">
+        <p role="alert" class="text-sm text-error">{{ loadDefinitionsError() }}</p>
+        <button
+          type="button"
+          (click)="loadDefinitions()"
+          class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover sm:w-auto"
         >
-          @for (type of examTypes; track type[0]) {
-            <option [value]="type[0]">{{ type[1].label }}</option>
-          }
-        </select>
+          Try again
+        </button>
       </div>
-      <h2 id="trends-chart-title" class="mt-4 text-lg font-semibold tracking-tight">
-        {{ selectedUi().label }} trend
-      </h2>
+    } @else if (records().length && !definitions().length) {
+      <p class="mt-4 text-sm text-text-secondary">No result fields are available for this exam.</p>
+    } @else {
       @if (chart(); as plot) {
-        @let digits = '1.' + selectedUi().decimals + '-' + selectedUi().decimals;
+        @let digits = '1.0-3';
         <figure aria-labelledby="trends-chart-title" class="mt-4">
           <div class="rounded-xl border border-border bg-surface-raised p-4 sm:p-6">
-            <p class="mb-3 text-xs text-text-secondary">{{ selectedUi().unit }}</p>
+            @if (selectedResultDefinition()?.unit; as unit) {
+              <p class="mb-3 text-xs text-text-secondary">{{ unit }}</p>
+            }
             <div class="flex gap-3">
               <div
                 aria-hidden="true"
@@ -110,32 +184,47 @@
             </div>
           </div>
           <figcaption class="mt-4 text-xs leading-relaxed text-text-muted">
-            Results by exam date · {{ selectedUi().unit }}
+            {{ selectedResultDefinition()?.label }} by exam date
+            @if (selectedResultDefinition()?.unit; as unit) {
+              · {{ unit }}
+            }
           </figcaption>
-          <table class="sr-only">
-            <caption>
-              {{
-                selectedUi().label
-              }}
-              results by exam date
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Exam date</th>
-                <th scope="col">Result ({{ selectedUi().unit }})</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (record of selectedRecords(); track record.id) {
+          <div class="sr-only">
+            <table>
+              <caption>
+                {{
+                  selectedExam()?.name
+                }}
+                —
+                {{
+                  selectedResultDefinition()?.label
+                }}
+                results by exam date
+              </caption>
+              <thead>
                 <tr>
-                  <th scope="row">{{ record.examDate | date: 'MMM d, yyyy' }}</th>
-                  <td>
-                    {{ record.examResults[0].value | number: digits }} {{ selectedUi().unit }}
-                  </td>
+                  <th scope="col">Exam date</th>
+                  <th scope="col">
+                    {{ selectedResultDefinition()?.label }}
+                    @if (selectedResultDefinition()?.unit; as unit) {
+                      ({{ unit }})
+                    }
+                  </th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (point of trendPoints(); track point.recordId) {
+                  <tr>
+                    <th scope="row">{{ point.examDate | date: 'MMM d, yyyy' }}</th>
+                    <td>
+                      {{ point.value | number: digits }}
+                      {{ selectedResultDefinition()?.unit }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </figure>
 
         @let result = summary();
@@ -144,7 +233,9 @@
             <dt class="text-sm font-medium text-text-secondary">Latest</dt>
             <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
               {{ result.latest | number: digits }}
-              <span class="text-sm font-medium text-text-secondary">{{ selectedUi().unit }}</span>
+              <span class="text-sm font-medium text-text-secondary">{{
+                selectedResultDefinition()?.unit
+              }}</span>
             </dd>
           </div>
           <div class="min-w-0">
@@ -152,7 +243,9 @@
             <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
               @if (result.previous !== null) {
                 {{ result.previous | number: digits }}
-                <span class="text-sm font-medium text-text-secondary">{{ selectedUi().unit }}</span>
+                <span class="text-sm font-medium text-text-secondary">{{
+                  selectedResultDefinition()?.unit
+                }}</span>
               } @else {
                 —
               }
@@ -163,12 +256,17 @@
             <dd class="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
               @if (result.change !== null) {
                 {{ result.change > 0 ? '+' : '' }}{{ result.change | number: digits }}
+                @if (selectedResultDefinition()?.unit; as unit) {
+                  <span class="text-sm font-medium text-text-secondary">{{ unit }}</span>
+                }
               } @else {
                 —
               }
             </dd>
           </div>
         </dl>
+      } @else if (records().length) {
+        <p class="mt-4 text-sm text-text-secondary">No results are available for this field.</p>
       } @else {
         <div class="mt-4 rounded-xl border border-border bg-surface-light p-6 text-center">
           <h3 class="font-medium">No data yet</h3>

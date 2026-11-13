@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { API_URL } from '../../../core/config/api-url';
 import { Observable } from 'rxjs';
 import { ExamType } from '../models/exam-type';
+import { ExamResultDefinition } from '../models/exam-result-definition';
 
 @Service()
 export class ExamTypesService {
@@ -12,5 +13,11 @@ export class ExamTypesService {
 
   public getAll(): Observable<ExamType[]> {
     return this.http.get<ExamType[]>(`${this.apiUrl}/${this.slug}`);
+  }
+
+  public getResultDefinitions(examTypeCode: string): Observable<ExamResultDefinition[]> {
+    return this.http.get<ExamResultDefinition[]>(
+      `${this.apiUrl}/${this.slug}/${encodeURIComponent(examTypeCode)}/result-definitions`,
+    );
   }
 }
