@@ -45,7 +45,7 @@ export class Settings implements OnInit {
   private readonly remindersService = inject(ExamRemindersService);
   private readonly injector = inject(Injector);
   private readonly settingsModel = signal<SettingsModel>({ defaultTrendsExam: '', language: 'en' });
-  private readonly examCatalog = signal<ExamType[]>([]);
+  protected readonly examCatalog = signal<ExamType[]>([]);
   private readonly createReminderModel = signal<{
     examTypeCode: string;
     intervalValue: number | null;
@@ -76,14 +76,20 @@ export class Settings implements OnInit {
   protected readonly activeExamTypes = computed(() =>
     this.examCatalog().filter((type) => type.active),
   );
+  protected readonly editableReminderExamCodes = computed(
+    () =>
+      new Set(
+        this.loadingCatalog() || this.catalogError()
+          ? []
+          : this.activeExamTypes().map((type) => type.code),
+      ),
+  );
   protected readonly unavailableDefault = computed(() => {
     const code = this.settingsModel().defaultTrendsExam;
-    if (!code || this.activeExamTypes().some((type) => type.code === code)) return null;
+    if (!code || this.examCatalog().some((type) => type.code === code)) return null;
     return {
       code,
-      name:
-        this.examCatalog().find((type) => type.code === code)?.name ??
-        'Current selection (unavailable)',
+      name: 'Current selection (unavailable)',
     };
   });
   protected readonly availableReminderTypes = computed(() => {
@@ -104,8 +110,7 @@ export class Settings implements OnInit {
     (path) => {
       required(path.defaultTrendsExam, { message: 'Choose a default exam.' });
       disabled(path.defaultTrendsExam, {
-        when: () =>
-          this.loadingCatalog() || !!this.catalogError() || !this.activeExamTypes().length,
+        when: () => this.loadingCatalog() || !!this.catalogError() || !this.examCatalog().length,
       });
     },
     {

@@ -24,6 +24,7 @@ import { ExamRemindersService } from '../../services/exam-reminders-service';
 })
 export class ExamReminderItem {
   readonly reminder = input.required<ExamReminder>();
+  readonly examTypeActive = input.required<boolean>();
   readonly deleting = input(false);
   readonly saved = output<ExamReminder>();
   readonly deleteRequested = output<HTMLButtonElement>();
@@ -34,7 +35,7 @@ export class ExamReminderItem {
     intervalValue: number | null;
     intervalUnit: ReminderIntervalUnit;
   }>(() => ({
-    enabled: this.reminder().enabled,
+    enabled: this.examTypeActive() && this.reminder().enabled,
     intervalValue: this.reminder().intervalValue,
     intervalUnit: this.reminder().intervalUnit,
   }));
@@ -45,7 +46,7 @@ export class ExamReminderItem {
   protected readonly editForm = form(
     this.editModel,
     (path) => {
-      disabled(path, { when: () => this.deleting() });
+      disabled(path, { when: () => this.deleting() || !this.examTypeActive() });
       required(path.intervalValue, { message: 'Enter an interval.' });
       min(path.intervalValue, 1, { message: 'Enter a whole number greater than zero.' });
       required(path.intervalUnit, { message: 'Choose an interval unit.' });
@@ -60,7 +61,7 @@ export class ExamReminderItem {
       submission: {
         action: async (field) => {
           const model = field().value();
-          if (this.deleting() || model.intervalValue === null) return;
+          if (this.deleting() || !this.examTypeActive() || model.intervalValue === null) return;
           const request: UpdateExamReminderRequest = {
             enabled: model.enabled,
             intervalValue: model.intervalValue,

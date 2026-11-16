@@ -128,7 +128,7 @@ describe('Settings', () => {
   });
   afterEach(() => http.verify());
 
-  it('loads three independent sources and derives default options from active catalog data', async () => {
+  it('loads three independent sources and offers all catalog exams as Trends defaults', async () => {
     expect(page.textContent).toContain('Loading your settings');
     expect(page.textContent).toContain('Loading exam types');
     expect(page.textContent).toContain('Loading reminders');
@@ -140,13 +140,18 @@ describe('Settings', () => {
     expect(element('#exam-reminder-retired').textContent).toContain('Historical exam');
     expect(button('Add reminder').disabled).toBe(true);
     await loadCatalog();
-    expect(options('#settings-default-exam')).toEqual(['', 'PANEL', 'TSH']);
+    expect(options('#settings-default-exam')).toEqual(['', 'PANEL', 'TSH', 'RETIRED']);
     expect(element<HTMLSelectElement>('#settings-default-exam').value).toBe('PANEL');
     expect(
       [...element<HTMLSelectElement>('#settings-default-exam').options].map(
         (option) => option.text,
       ),
-    ).toEqual(['Choose an exam', 'Backend panel', 'Backend thyroid exam']);
+    ).toEqual([
+      'Choose an exam',
+      'Backend panel',
+      'Backend thyroid exam',
+      'Historical exam (Inactive)',
+    ]);
     expect(options('#settings-language')).toEqual(['en']);
     expect(element<HTMLSelectElement>('#settings-language').selectedOptions[0].text).toBe(
       'English',
@@ -182,9 +187,13 @@ describe('Settings', () => {
     expect(element<HTMLSelectElement>('#settings-default-exam').disabled).toBe(true);
     expect(element<HTMLSelectElement>('#settings-language').disabled).toBe(false);
     expect(button('Add reminder').disabled).toBe(true);
+    expect(element('#reminder-panel-enabled').matches(':disabled')).toBe(true);
+    expect(button('Save changes', element('#exam-reminder-panel')).disabled).toBe(true);
+    expect(button('Delete', element('#exam-reminder-panel')).disabled).toBe(false);
     await click(button('Try again loading exam types'));
     await loadCatalog();
     expect(element<HTMLSelectElement>('#settings-default-exam').disabled).toBe(false);
+    expect(element('#reminder-panel-enabled').matches(':disabled')).toBe(false);
     expect(page.textContent).not.toContain('Unable to load exam types.');
     http.expectNone(settingsUrl);
     http.expectNone(remindersUrl);
@@ -235,15 +244,29 @@ describe('Settings', () => {
     http.expectNone(remindersUrl);
   });
 
-  it('preserves an inactive current default but does not offer it as a new selection', async () => {
+  it('keeps an inactive default valid and allows selecting and saving it again', async () => {
     await loadSettings({ defaultTrendsExam: 'RETIRED', language: 'en' });
     await loadCatalog();
     await loadReminders();
     const select = element<HTMLSelectElement>('#settings-default-exam');
     expect(select.value).toBe('RETIRED');
-    expect([...select.options].find((option) => option.value === 'RETIRED')?.disabled).toBe(true);
+    expect([...select.options].find((option) => option.value === 'RETIRED')?.disabled).toBe(false);
+    await submit('#settings-preferences-form');
+    const savedDefault = http.expectOne(settingsUrl);
+    expect(savedDefault.request.body).toEqual({ defaultTrendsExam: 'RETIRED', language: 'en' });
+    savedDefault.flush({ defaultTrendsExam: 'RETIRED', language: 'en' });
+    await render();
     await enter('#settings-default-exam', 'TSH');
-    expect(options('#settings-default-exam')).not.toContain('RETIRED');
+    expect(options('#settings-default-exam')).toContain('RETIRED');
+    await enter('#settings-default-exam', 'RETIRED');
+    await submit('#settings-preferences-form');
+    const request = http.expectOne(settingsUrl);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ defaultTrendsExam: 'RETIRED', language: 'en' });
+    request.flush({ defaultTrendsExam: 'RETIRED', language: 'en' });
+    await render();
+    expect(select.value).toBe('RETIRED');
+    expect(page.textContent).not.toContain('Current selection (unavailable)');
   });
 
   it('handles catalogs with no active exams without hiding existing reminders', async () => {
@@ -253,6 +276,13 @@ describe('Settings', () => {
     expect(button('Add reminder').disabled).toBe(true);
     expect(page.textContent).toContain('No active exams are available for a new reminder.');
     expect(element('#exam-reminder-retired').textContent).toContain('Historical exam');
+    expect(element<HTMLSelectElement>('#settings-default-exam').disabled).toBe(false);
+    await enter('#settings-default-exam', 'RETIRED');
+    await submit('#settings-preferences-form');
+    const request = http.expectOne(settingsUrl);
+    expect(request.request.body).toEqual({ defaultTrendsExam: 'RETIRED', language: 'en' });
+    request.flush({ defaultTrendsExam: 'RETIRED', language: 'en' });
+    await render();
   });
 
   it('excludes paused existing reminders and inactive exams from the add selector', async () => {
@@ -296,6 +326,18 @@ describe('Settings', () => {
     await submit('#settings-create-reminder-form');
     expect(document.activeElement).toBe(element('#settings-reminder-unit'));
     http.expectNone((request) => request.method === 'POST');
+  });
+
+  it('rejects an inactive exam for creation even if its code is injected into the selector', async () => {
+    await load();
+    await click(button('Add reminder'));
+    const select = element<HTMLSelectElement>('#settings-reminder-exam');
+    expect(options('#settings-reminder-exam')).not.toContain('RETIRED');
+    select.add(new Option('Historical exam', 'RETIRED'));
+    await fillCreation('RETIRED');
+    await submit('#settings-create-reminder-form');
+    http.expectNone((request) => request.method === 'POST');
+    expect(page.querySelector('#settings-create-reminder-form')).not.toBeNull();
   });
 
   it.each(['DAY', 'WEEK', 'MONTH', 'YEAR'] as const)(
@@ -391,8 +433,13 @@ describe('Settings', () => {
   });
 
   it('updates reminder fields only, preserves failed edits and keeps other reminder drafts', async () => {
-    await load([pausedReminder, historicalReminder]);
-    await enter('#reminder-retired-value', '7');
+    const otherReminder: ExamReminder = {
+      ...pausedReminder,
+      id: 'thyroid',
+      examType: { code: 'TSH', name: 'Backend thyroid exam' },
+    };
+    await load([pausedReminder, otherReminder]);
+    await enter('#reminder-thyroid-value', '7');
     element<HTMLInputElement>('#reminder-panel-enabled').click();
     await enter('#reminder-panel-value', '5');
     await enter('#reminder-panel-unit', 'YEAR');
@@ -406,7 +453,7 @@ describe('Settings', () => {
       intervalUnit: 'YEAR',
     });
     expect(element('#reminder-panel-value').matches(':disabled')).toBe(true);
-    expect(element('#reminder-retired-value').matches(':disabled')).toBe(false);
+    expect(element('#reminder-thyroid-value').matches(':disabled')).toBe(false);
     request.flush('private detail', { status: 500, statusText: 'Error' });
     await render();
     expect(element<HTMLInputElement>('#reminder-panel-value').value).toBe('5');
@@ -426,7 +473,7 @@ describe('Settings', () => {
     await render();
     expect(element<HTMLInputElement>('#reminder-panel-value').value).toBe('9');
     expect(element<HTMLSelectElement>('#reminder-panel-unit').value).toBe('MONTH');
-    expect(element<HTMLInputElement>('#reminder-retired-value').value).toBe('7');
+    expect(element<HTMLInputElement>('#reminder-thyroid-value').value).toBe('7');
     expect(element('#exam-reminder-panel').textContent).toContain('Reminder updated.');
     expect(element('#exam-reminder-panel').querySelectorAll('select')).toHaveLength(1);
     http.expectNone(remindersUrl);
@@ -544,4 +591,46 @@ describe('Settings', () => {
     await render();
     expect(page.querySelector('#exam-reminder-retired')).toBeNull();
   });
+
+  it.each([
+    ['inactive', historicalReminder],
+    [
+      'missing from the catalog',
+      { ...historicalReminder, id: 'missing', examType: { code: 'UNKNOWN', name: 'Missing exam' } },
+    ],
+  ] as const)(
+    'keeps a reminder whose exam is %s visible, disabled and deletable',
+    async (_, reminder) => {
+      await load([reminder]);
+      const row = element(`#exam-reminder-${reminder.id}`);
+      expect(row.textContent).toContain(reminder.examType.name);
+      const enabled = element<HTMLInputElement>(`#reminder-${reminder.id}-enabled`);
+      expect(enabled.checked).toBe(false);
+      for (const control of row.querySelectorAll('input, select')) {
+        expect(control.matches(':disabled')).toBe(true);
+      }
+      expect(button('Save changes', row).disabled).toBe(true);
+      expect(button('Delete', row).disabled).toBe(false);
+      enabled.click();
+      await submit(`#exam-reminder-${reminder.id} form`);
+      expect(enabled.checked).toBe(false);
+      expect(reminder.enabled).toBe(true);
+      http.expectNone((request) => request.method === 'PUT');
+      http.expectNone(catalogUrl);
+      await click(button('Delete', row));
+      expect(dialog.open).toBe(true);
+      expect(dialog.textContent).toContain(reminder.examType.name);
+      await click(button('Delete', dialog));
+      const request = http.expectOne(`${remindersUrl}/${reminder.id}`);
+      expect(request.request.method).toBe('DELETE');
+      expect(request.request.body).toBeNull();
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await render();
+      expect(page.querySelector(`#exam-reminder-${reminder.id}`)).toBeNull();
+      await click(button('Add reminder'));
+      expect(options('#settings-reminder-exam')).toEqual(['', 'PANEL', 'TSH']);
+      http.expectNone(remindersUrl);
+      http.expectNone(catalogUrl);
+    },
+  );
 });

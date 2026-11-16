@@ -75,8 +75,10 @@
               @if (unavailableDefault(); as current) {
                 <option [value]="current.code" disabled>{{ current.name }}</option>
               }
-              @for (type of activeExamTypes(); track type.code) {
-                <option [value]="type.code">{{ type.name }}</option>
+              @for (type of examCatalog(); track type.code) {
+                <option [value]="type.code">
+                  {{ type.name }}{{ type.active ? '' : ' (Inactive)' }}
+                </option>
               }
             </select>
             @if (defaultInvalid) {
@@ -86,10 +88,8 @@
                 }
               </ul>
             }
-            @if (!loadingCatalog() && !catalogError() && !activeExamTypes().length) {
-              <p class="text-sm text-text-secondary">
-                No active exams are available for a new default.
-              </p>
+            @if (!loadingCatalog() && !catalogError() && !examCatalog().length) {
+              <p class="text-sm text-text-secondary">No exams are available for a default.</p>
             }
           </div>
           <div class="space-y-2">
@@ -304,6 +304,7 @@
           <li [id]="'exam-reminder-' + reminder.id" class="py-6">
             <app-exam-reminder-item
               [reminder]="reminder"
+              [examTypeActive]="editableReminderExamCodes().has(reminder.examType.code)"
               [deleting]="reminderToDelete()?.id === reminder.id"
               (saved)="reminderSaved($event)"
               (deleteRequested)="requestDeleteReminder(reminder, $event, deleteDialog)"
