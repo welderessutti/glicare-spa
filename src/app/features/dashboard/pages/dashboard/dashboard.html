@@ -39,50 +39,52 @@
       </button>
     </div>
   } @else {
-    <section aria-labelledby="dashboard-summary-title">
-      <h2 id="dashboard-summary-title" class="sr-only">Latest exam records</h2>
-      <div class="grid gap-3 md:grid-cols-2 md:gap-4">
-        <article class="min-w-0 rounded-xl border border-border bg-surface-raised p-5">
-          <h3 class="text-sm font-medium text-text-secondary">Latest {{ examUi.HBA1C.label }}</h3>
-          @if (latestHba1c(); as record) {
-            <p class="mt-3 flex flex-wrap items-baseline gap-x-2 tabular-nums">
-              <span class="text-3xl font-semibold tracking-tight">{{
-                record.examResults[0].value
-                  | number: '1.' + examUi.HBA1C.decimals + '-' + examUi.HBA1C.decimals
-              }}</span>
-              <span class="text-sm text-text-secondary">{{ examUi.HBA1C.unit }}</span>
-            </p>
-            <p class="mt-2 text-sm text-text-secondary">
-              <time [attr.datetime]="record.examDate">{{
-                record.examDate | date: 'MMM dd, yyyy'
-              }}</time>
-            </p>
-          } @else {
-            <p class="mt-3 text-sm text-text-secondary">No records yet.</p>
-          }
+    @if (latestRecord(); as record) {
+      <section aria-labelledby="dashboard-latest-title">
+        <h2 id="dashboard-latest-title" class="text-lg font-semibold tracking-tight">
+          Latest record
+        </h2>
+        <article class="mt-3 min-w-0 rounded-xl border border-border bg-surface-raised p-5 sm:p-6">
+          <h3 class="text-xl font-semibold wrap-break-word sm:text-2xl">
+            {{ record.examType.name }}
+          </h3>
+          <p class="mt-2 text-sm text-text-secondary">
+            <time [attr.datetime]="record.examDate">{{
+              record.examDate | date: 'MMM dd, yyyy'
+            }}</time>
+          </p>
+          <dl class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (result of record.examResults; track result.id) {
+              <div class="min-w-0 space-y-1">
+                <dt class="text-sm font-medium text-text-secondary wrap-break-word">
+                  {{ result.resultDefinition.label }}
+                </dt>
+                <dd class="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                  <span class="text-3xl font-semibold tracking-tight wrap-anywhere">{{
+                    result.value | number: '1.0-3'
+                  }}</span>
+                  @if (result.resultDefinition.unit) {
+                    <span class="text-sm text-text-secondary wrap-anywhere">{{
+                      result.resultDefinition.unit
+                    }}</span>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
         </article>
-
-        <article class="min-w-0 rounded-xl border border-border bg-surface-raised p-5">
-          <h3 class="text-sm font-medium text-text-secondary">Latest {{ examUi.GLU.label }}</h3>
-          @if (latestGlucose(); as record) {
-            <p class="mt-3 flex flex-wrap items-baseline gap-x-2 tabular-nums">
-              <span class="text-3xl font-semibold tracking-tight">{{
-                record.examResults[0].value
-                  | number: '1.' + examUi.GLU.decimals + '-' + examUi.GLU.decimals
-              }}</span>
-              <span class="text-sm text-text-secondary">{{ examUi.GLU.unit }}</span>
-            </p>
-            <p class="mt-2 text-sm text-text-secondary">
-              <time [attr.datetime]="record.examDate">{{
-                record.examDate | date: 'MMM dd, yyyy'
-              }}</time>
-            </p>
-          } @else {
-            <p class="mt-3 text-sm text-text-secondary">No records yet.</p>
-          }
-        </article>
-      </div>
-    </section>
+      </section>
+    } @else {
+      <section
+        aria-labelledby="dashboard-empty-title"
+        class="space-y-2 rounded-xl border border-border bg-surface-light p-5"
+      >
+        <h2 id="dashboard-empty-title" class="text-lg font-semibold">No records yet.</h2>
+        <p class="text-sm leading-relaxed text-text-secondary">
+          Add your first exam result to start tracking your history.
+        </p>
+      </section>
+    }
 
     <section
       aria-labelledby="dashboard-add-title"
@@ -115,51 +117,46 @@
       </a>
     </section>
 
-    <section aria-labelledby="dashboard-records-title" class="min-w-0">
-      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 id="dashboard-records-title" class="text-lg font-semibold tracking-tight">
-          Recent records
-        </h2>
-        <a
-          [routerLink]="appNavigation.RECORDS.route"
-          class="inline-flex min-h-11 items-center gap-2 rounded-lg py-2 text-sm font-medium text-text-secondary hover:text-accent"
-        >
-          View records <span aria-hidden="true">→</span>
-        </a>
-      </div>
-
-      @if (recentRecords().length) {
+    @if (recentRecords().length) {
+      <section aria-labelledby="dashboard-records-title" class="min-w-0">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <h2 id="dashboard-records-title" class="text-lg font-semibold tracking-tight">
+            Recent records
+          </h2>
+          <a
+            [routerLink]="appNavigation.RECORDS.route"
+            class="inline-flex min-h-11 items-center gap-2 rounded-lg py-2 text-sm font-medium text-text-secondary hover:text-accent"
+          >
+            View records <span aria-hidden="true">→</span>
+          </a>
+        </div>
         <ul class="mt-3 divide-y divide-border-light border-y border-border-light">
           @for (record of recentRecords(); track record.id) {
-            @let ui = examUi[record.examType.code];
-            @let digits = '1.' + ui.decimals + '-' + ui.decimals;
-            <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
-              <div>
-                <p class="text-sm font-medium">{{ ui.label }}</p>
-                <p class="mt-1 text-xs text-text-muted">
-                  <time [attr.datetime]="record.examDate">{{
-                    record.examDate | date: 'MMM dd, yyyy'
-                  }}</time>
-                </p>
+            <li class="min-w-0 py-4">
+              <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h3 class="text-sm font-medium wrap-break-word">{{ record.examType.name }}</h3>
+                <time [attr.datetime]="record.examDate" class="text-xs text-text-muted">{{
+                  record.examDate | date: 'MMM dd, yyyy'
+                }}</time>
               </div>
-              <p class="flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
-                <span class="text-base font-semibold">{{
-                  record.examResults[0].value | number: digits
-                }}</span>
-                <span class="text-xs text-text-secondary">{{ ui.unit }}</span>
-              </p>
+              <dl class="mt-3 space-y-1">
+                @for (result of record.examResults; track result.id) {
+                  <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                    <dt class="text-text-secondary wrap-break-word">
+                      {{ result.resultDefinition.label }}:
+                    </dt>
+                    <dd class="font-medium tabular-nums wrap-anywhere">
+                      {{ result.value | number: '1.0-3'
+                      }}{{ result.resultDefinition.unit ? ' ' + result.resultDefinition.unit : '' }}
+                    </dd>
+                  </div>
+                }
+              </dl>
             </li>
           }
         </ul>
-      } @else {
-        <div class="mt-3 space-y-1 rounded-xl border border-border bg-surface-light p-5">
-          <p class="text-sm font-medium">No records yet.</p>
-          <p class="text-sm leading-relaxed text-text-secondary">
-            Add your first exam result to start tracking your history.
-          </p>
-        </div>
-      }
-    </section>
+      </section>
+    }
 
     <section
       aria-labelledby="dashboard-explore-title"
