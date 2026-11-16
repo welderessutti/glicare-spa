@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 import { vi } from 'vitest';
 import { Records } from './records';
 import { ExamRecord } from '../../models/exam-record';
 import { ExamType } from '../../models/exam-type';
+import { ExamTypeOption } from '../../models/exam-type-option';
+import { ExamResultSchemaOption } from '../../models/exam-result-schema-option';
+import { ExamResultDefinition } from '../../models/exam-result-definition';
 import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
 import { UpdateExamRecordRequest } from '../../models/requests/update-exam-record-request';
 import { ExamRecordFiltersRequest } from '../../models/requests/exam-record-filters-request';
@@ -94,10 +97,10 @@ const catalog: ExamType[] = [
         active: true,
         resultDefinitions: [
           {
-            id: 'alternative',
+            id: 'first',
             code: 'FIRST',
-            label: 'Alternative value',
-            unit: 'unit C',
+            label: 'First measurement',
+            unit: 'unit A',
             active: true,
           },
         ],
@@ -158,12 +161,15 @@ describe('Records', () => {
   let page: HTMLElement;
   let dialog: HTMLDialogElement;
   let listResponse: Subject<ExamRecord[]>;
-  let catalogResponse: Subject<ExamType[]>;
+  let catalogResponse: Subject<ExamTypeOption[]>;
   let createResponse: Subject<ExamRecord>;
   let updateResponse: Subject<ExamRecord>;
   let deleteResponse: Subject<void>;
   const getAll = vi.fn<(filters?: ExamRecordFiltersRequest) => Observable<ExamRecord[]>>();
-  const getExamTypes = vi.fn<() => Observable<ExamType[]>>();
+  const getExamTypes = vi.fn<() => Observable<ExamTypeOption[]>>();
+  const getSchemas = vi.fn<(code: string) => Observable<ExamResultSchemaOption[]>>();
+  const getDefinitions =
+    vi.fn<(code: string, schemaCode: string) => Observable<ExamResultDefinition[]>>();
   const create = vi.fn<(request: CreateExamRecordRequest) => Observable<ExamRecord>>();
   const updateById =
     vi.fn<(id: string, request: UpdateExamRecordRequest) => Observable<ExamRecord>>();
@@ -213,25 +219,46 @@ describe('Records', () => {
   ): Promise<void> {
     listResponse.next(records);
     listResponse.complete();
-    catalogResponse.next(catalog);
+    catalogResponse.next(
+      catalog
+        .filter((type) => type.active)
+        .map(({ id, code, name, active }) => ({ id, code, name, active })),
+    );
     await fixture.whenStable();
   }
 
   async function fillCreation(code: string, value: string): Promise<void> {
     await enter('#records-exam-type', code);
-    await enter('#records-result-schema', 'STANDARD');
+    if (page.querySelector('#records-result-schema'))
+      await enter('#records-result-schema', 'STANDARD');
     await enter('#records-result-0', value);
     await enter('#records-exam-date', '2026-10-20');
   }
 
   beforeEach(async () => {
     listResponse = new Subject<ExamRecord[]>();
-    catalogResponse = new Subject<ExamType[]>();
+    catalogResponse = new Subject<ExamTypeOption[]>();
     createResponse = new Subject<ExamRecord>();
     updateResponse = new Subject<ExamRecord>();
     deleteResponse = new Subject<void>();
     getAll.mockReset().mockReturnValue(listResponse);
     getExamTypes.mockReset().mockReturnValue(catalogResponse);
+    getSchemas.mockReset().mockImplementation((code) =>
+      of(
+        catalog
+          .find((type) => type.code === code)
+          ?.resultSchemas.filter((schema) => schema.active)
+          .map(({ id, code, name, active }) => ({ id, code, name, active })) ?? [],
+      ),
+    );
+    getDefinitions.mockReset().mockImplementation((code, schemaCode) =>
+      of(
+        catalog
+          .find((type) => type.code === code)
+          ?.resultSchemas.find((schema) => schema.code === schemaCode)
+          ?.resultDefinitions.filter((definition) => definition.active) ?? [],
+      ),
+    );
     create.mockReset().mockReturnValue(createResponse);
     updateById.mockReset().mockReturnValue(updateResponse);
     deleteById.mockReset().mockReturnValue(deleteResponse);
@@ -239,7 +266,14 @@ describe('Records', () => {
       imports: [Records],
       providers: [
         { provide: ExamRecordsService, useValue: { getAll, create, updateById, deleteById } },
-        { provide: ExamTypesService, useValue: { getAll: getExamTypes } },
+        {
+          provide: ExamTypesService,
+          useValue: {
+            getActive: getExamTypes,
+            getActiveResultSchemas: getSchemas,
+            getActiveSchemaResultDefinitions: getDefinitions,
+          },
+        },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(Records);
@@ -300,6 +334,8 @@ describe('Records', () => {
 
   it('loads the catalog independently and uses its active exam names and codes', async () => {
     expect(getExamTypes).toHaveBeenCalledExactlyOnceWith();
+    expect(getSchemas).not.toHaveBeenCalled();
+    expect(getDefinitions).not.toHaveBeenCalled();
     await click(button('Add record'));
     expect(element('#records-add-section').textContent).toContain('Loading exam types');
     expect(document.activeElement).toBe(element('#records-add-title'));
@@ -343,29 +379,137 @@ describe('Records', () => {
     expect(getExamTypes).toHaveBeenCalledTimes(2);
   });
 
-  it('handles catalogs with no active exams, schemas or result definitions', async () => {
+  it('auto-selects one schema and loads fields without rendering a schema selector', async () => {
     await load();
     await click(button('Add record'));
-    catalogResponse.next([catalog[3]]);
-    await fixture.whenStable();
-    expect(element('#records-add-section').textContent).toContain('No exam types are available.');
+    await enter('#records-exam-type', 'GLU');
+    expect(getSchemas).toHaveBeenCalledExactlyOnceWith('GLU');
+    expect(getDefinitions).toHaveBeenCalledExactlyOnceWith('GLU', 'STANDARD');
+    expect(page.querySelector('#records-result-schema')).toBeNull();
+    expect(element('label[for="records-result-0"]').textContent).toBe('Catalog glucose result');
+  });
+
+  it('waits for schema selection when multiple schemas are returned', async () => {
+    await load();
+    await click(button('Add record'));
+    await enter('#records-exam-type', 'PANEL');
+    expect(getSchemas).toHaveBeenCalledExactlyOnceWith('PANEL');
+    expect(element<HTMLSelectElement>('#records-result-schema').value).toBe('');
+    expect(getDefinitions).not.toHaveBeenCalled();
     expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
-    catalogResponse.next([{ ...catalog[0], resultSchemas: [] }]);
-    await fixture.whenStable();
-    await enter('#records-exam-type', 'HBA1C');
-    expect(element('#records-add-section').textContent).toContain(
-      'No result schemas are available',
-    );
-    catalogResponse.next([
-      { ...catalog[0], resultSchemas: [{ ...catalog[0].resultSchemas[0], resultDefinitions: [] }] },
-    ]);
-    await fixture.whenStable();
     await enter('#records-result-schema', 'STANDARD');
-    expect(element('#records-add-section').textContent).toContain('No result fields are available');
+    expect(getDefinitions).toHaveBeenCalledExactlyOnceWith('PANEL', 'STANDARD');
+  });
+
+  it('does not load definitions or allow submit when there are no schemas', async () => {
+    getSchemas.mockReturnValueOnce(of([]));
+    await load();
+    await click(button('Add record'));
+    await enter('#records-exam-type', 'GLU');
+    expect(page.textContent).toContain('No result schemas are available for this exam.');
+    expect(page.querySelector('#records-result-schema')).toBeNull();
+    expect(getDefinitions).not.toHaveBeenCalled();
     expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
-    await enter('#records-exam-date', '2026-10-20');
     await submit();
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('handles no active exam options and no definitions without permitting submission', async () => {
+    await load();
+    await click(button('Add record'));
+    catalogResponse.next([]);
+    await fixture.whenStable();
+    expect(page.textContent).toContain('No exam types are available.');
+    expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
+    catalogResponse.next(catalog);
+    getDefinitions.mockReturnValueOnce(of([]));
+    await fixture.whenStable();
+    await enter('#records-exam-type', 'GLU');
+    expect(page.textContent).toContain('No result fields are available for this schema.');
+    expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
+    await submit();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('retries schema failures only for the current exam and preserves the exam date', async () => {
+    const pending = new Subject<ExamResultSchemaOption[]>();
+    getSchemas.mockReturnValueOnce(pending);
+    await load();
+    await click(button('Add record'));
+    await enter('#records-exam-date', '2026-10-20');
+    await enter('#records-exam-type', 'GLU');
+    expect(page.textContent).toContain('Loading result schemas');
+    expect(page.textContent).not.toContain('No result schemas are available');
+    expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
+    pending.error(new HttpErrorResponse({ status: 500, error: 'private schema detail' }));
+    await fixture.whenStable();
+    expect(page.textContent).toContain('Unable to load result schemas.');
+    expect(page.textContent).not.toContain('private schema detail');
+    expect(getDefinitions).not.toHaveBeenCalled();
+    await click(button('Try again', element('#records-add-section')));
+    expect(getSchemas).toHaveBeenNthCalledWith(2, 'GLU');
+    expect(getDefinitions).toHaveBeenCalledExactlyOnceWith('GLU', 'STANDARD');
+    expect(getExamTypes).toHaveBeenCalledTimes(1);
+    expect(getAll).toHaveBeenCalledTimes(1);
+    expect(element<HTMLInputElement>('#records-exam-date').value).toBe('2026-10-20');
+  });
+
+  it('retries definition failures only for the current exam and schema', async () => {
+    const pending = new Subject<ExamResultDefinition[]>();
+    getDefinitions.mockReturnValueOnce(pending);
+    await load();
+    await click(button('Add record'));
+    await enter('#records-exam-type', 'GLU');
+    expect(page.textContent).toContain('Loading result fields');
+    expect(page.textContent).not.toContain('No result fields are available');
+    expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
+    pending.error(new HttpErrorResponse({ status: 500, error: 'private definition detail' }));
+    await fixture.whenStable();
+    expect(page.textContent).toContain('Unable to load result fields.');
+    expect(page.textContent).not.toContain('private definition detail');
+    await click(button('Try again', element('#records-add-section')));
+    expect(getDefinitions).toHaveBeenNthCalledWith(2, 'GLU', 'STANDARD');
+    expect(getSchemas).toHaveBeenCalledTimes(1);
+    expect(getExamTypes).toHaveBeenCalledTimes(1);
+    expect(getAll).toHaveBeenCalledTimes(1);
+    expect(page.querySelector('#records-result-0')).not.toBeNull();
+  });
+
+  it('cancels obsolete schema requests and clears the selected schema and fields immediately', async () => {
+    await load();
+    await click(button('Add record'));
+    await fillCreation('PANEL', '12');
+    const obsolete = new Subject<ExamResultSchemaOption[]>();
+    getSchemas.mockReturnValueOnce(obsolete);
+    await enter('#records-exam-type', 'HBA1C');
+    expect(page.querySelector('#records-result-0')).toBeNull();
+    expect(page.querySelector('#records-result-schema')).toBeNull();
+    await enter('#records-exam-type', 'GLU');
+    obsolete.next([{ id: 'old', code: 'OLD', name: 'Stale schema', active: true }]);
+    obsolete.complete();
+    await fixture.whenStable();
+    expect(page.textContent).not.toContain('Stale schema');
+    expect(getDefinitions).not.toHaveBeenCalledWith('HBA1C', 'OLD');
+    expect(element('label[for="records-result-0"]').textContent).toBe('Catalog glucose result');
+  });
+
+  it('clears values on schema changes and ignores a late fields response from the previous schema', async () => {
+    await load();
+    await click(button('Add record'));
+    await fillCreation('PANEL', '12');
+    const obsolete = new Subject<ExamResultDefinition[]>();
+    getDefinitions.mockReturnValueOnce(obsolete);
+    await enter('#records-result-schema', 'ALTERNATIVE');
+    expect(page.querySelector('#records-result-0')).toBeNull();
+    expect(element<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
+    await enter('#records-result-schema', 'STANDARD');
+    obsolete.next([{ id: 'stale', code: 'STALE', label: 'Stale field', unit: 'X', active: true }]);
+    obsolete.complete();
+    await fixture.whenStable();
+    expect(page.textContent).not.toContain('Stale field');
+    expect(element<HTMLInputElement>('#records-result-0').value).toBe('');
+    expect(page.querySelector('#records-result-1')).not.toBeNull();
+    expect(getDefinitions).toHaveBeenLastCalledWith('PANEL', 'STANDARD');
   });
 
   it('requires explicit type and schema selections and focuses the first invalid control', async () => {
@@ -380,7 +524,7 @@ describe('Records', () => {
     expect(select.getAttribute('aria-invalid')).toBe('true');
     expect(select.getAttribute('aria-describedby')).toBe('records-type-error');
     expect(element('#records-type-error').textContent).toContain('Choose an exam type.');
-    expect(element('#records-schema-error').textContent).toContain('Choose a result schema.');
+    expect(page.querySelector('#records-result-schema')).toBeNull();
     expect(element('#records-date-error').textContent).toContain('Enter the exam date.');
     await enter('#records-exam-type', 'PANEL');
     expect(element<HTMLSelectElement>('#records-result-schema').value).toBe('');
@@ -407,14 +551,12 @@ describe('Records', () => {
     await enter('#records-result-1', '24');
     await enter('#records-result-schema', 'ALTERNATIVE');
     expect(element<HTMLInputElement>('#records-result-0').value).toBe('');
-    expect(element('label[for="records-result-0"]').textContent).toBe('Alternative value');
-    expect(element('#records-result-unit-0').textContent?.trim()).toBe('unit C');
+    expect(element('label[for="records-result-0"]').textContent).toBe('First measurement');
+    expect(element('#records-result-unit-0').textContent?.trim()).toBe('unit A');
     expect(page.querySelector('#records-result-1')).toBeNull();
     await enter('#records-result-0', '36');
     await enter('#records-exam-type', 'GLU');
-    expect(element<HTMLSelectElement>('#records-result-schema').value).toBe('');
-    expect(page.querySelector('#records-result-0')).toBeNull();
-    await enter('#records-result-schema', 'STANDARD');
+    expect(page.querySelector('#records-result-schema')).toBeNull();
     expect(element<HTMLInputElement>('#records-result-0').value).toBe('');
     expect(element('label[for="records-result-0"]').textContent).toBe('Catalog glucose result');
     expect(element('#records-result-unit-0').textContent?.trim()).toBe('mg/dL');
@@ -498,7 +640,7 @@ describe('Records', () => {
       expect(document.activeElement).toBe(button('Add record'));
       await click(button('Add record'));
       expect(element<HTMLSelectElement>('#records-exam-type').value).toBe('');
-      expect(element<HTMLSelectElement>('#records-result-schema').value).toBe('');
+      expect(page.querySelector('#records-result-schema')).toBeNull();
       expect(element<HTMLInputElement>('#records-exam-date').value).toBe('');
       expect(page.querySelector('#records-result-0')).toBeNull();
       expect(element('#records-exam-type').getAttribute('aria-invalid')).toBe('false');
@@ -576,6 +718,8 @@ describe('Records', () => {
   it('focuses the first invalid edit field before attempting an update', async () => {
     await load();
     await click(button('Edit', rows()[0]));
+    expect(getSchemas).not.toHaveBeenCalled();
+    expect(getDefinitions).not.toHaveBeenCalled();
     await enter('form input[type="number"]', '');
     await submit();
     expect(updateById).not.toHaveBeenCalled();

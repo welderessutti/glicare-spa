@@ -102,4 +102,41 @@ describe('ExamTypesService', () => {
     expect(request.request.method).toBe('GET');
     request.flush([]);
   });
+
+  it('loads lightweight active exam options without requesting nested catalog data', () => {
+    const options = [{ id: 'type-panel', code: 'PANEL', name: 'Panel', active: true }];
+    service.getActive().subscribe((value) => expect(value).toEqual(options));
+    const request = http.expectOne(`${API_URL}/exam-types?active=true`);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual(['active']);
+    request.flush(options);
+  });
+
+  it('loads active schema options for an encoded exam code', () => {
+    const options = [{ id: 'schema', code: 'STANDARD', name: 'Standard', active: true }];
+    service
+      .getActiveResultSchemas('PANEL/2 +')
+      .subscribe((value) => expect(value).toEqual(options));
+    const request = http.expectOne(
+      `${API_URL}/exam-types/PANEL%2F2%20%2B/result-schemas?active=true`,
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual(['active']);
+    request.flush(options);
+  });
+
+  it('loads only active definitions belonging to the encoded exam and schema', () => {
+    const definitions: ExamResultDefinition[] = [
+      { id: 'first', code: 'FIRST', label: 'First', unit: '%', active: true },
+    ];
+    service
+      .getActiveSchemaResultDefinitions('PANEL/2 +', 'STANDARD/1 +')
+      .subscribe((value) => expect(value).toEqual(definitions));
+    const request = http.expectOne(
+      `${API_URL}/exam-types/PANEL%2F2%20%2B/result-schemas/STANDARD%2F1%20%2B/result-definitions?active=true`,
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual(['active']);
+    request.flush(definitions);
+  });
 });

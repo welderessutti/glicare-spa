@@ -4,6 +4,7 @@ import {
   computed,
   inject,
   OnInit,
+  OnDestroy,
   signal,
   afterNextRender,
   ElementRef,
@@ -11,9 +12,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { applyEach, form, FormField, FormRoot, required } from '@angular/forms/signals';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { ExamRecord } from '../../models/exam-record';
-import { ExamType } from '../../models/exam-type';
+import { ExamTypeOption } from '../../models/exam-type-option';
+import { ExamResultSchemaOption } from '../../models/exam-result-schema-option';
+import { ExamResultDefinition } from '../../models/exam-result-definition';
 import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
 import { CreateExamResultRequest } from '../../models/requests/create-exam-result-request';
 import { UpdateExamRecordRequest } from '../../models/requests/update-exam-record-request';
@@ -27,10 +30,12 @@ import { ExamTypesService } from '../../services/exam-types-service';
   styleUrl: './records.css',
   templateUrl: './records.html',
 })
-export class Records implements OnInit {
+export class Records implements OnInit, OnDestroy {
   private readonly examRecordsService = inject(ExamRecordsService);
   private readonly examTypesService = inject(ExamTypesService);
-  private readonly examCatalog = signal<ExamType[]>([]);
+  private readonly examCatalog = signal<ExamTypeOption[]>([]);
+  private schemasRequest: Subscription | undefined;
+  private definitionsRequest: Subscription | undefined;
   private readonly createExamRecordModel = signal<{
     examTypeCode: string;
     examResultSchemaCode: string;
@@ -48,17 +53,25 @@ export class Records implements OnInit {
   protected readonly loadingExamTypes = signal(false);
   protected readonly loadExamTypesErrorMessage = signal('');
   protected readonly examTypes = computed(() => this.examCatalog().filter((type) => type.active));
-  protected readonly examResultSchemas = computed(() => {
-    const type = this.examTypes().find(
-      (type) => type.code === this.createExamRecordModel().examTypeCode,
+  protected readonly examResultSchemas = signal<ExamResultSchemaOption[]>([]);
+  protected readonly examResultDefinitions = signal<ExamResultDefinition[]>([]);
+  protected readonly loadingSchemas = signal(false);
+  protected readonly loadingDefinitions = signal(false);
+  protected readonly loadSchemasErrorMessage = signal('');
+  protected readonly loadDefinitionsErrorMessage = signal('');
+  protected readonly createCatalogReady = computed(() => {
+    const model = this.createExamRecordModel();
+    return (
+      !this.loadingExamTypes() &&
+      !this.loadingSchemas() &&
+      !this.loadingDefinitions() &&
+      !this.loadExamTypesErrorMessage() &&
+      !this.loadSchemasErrorMessage() &&
+      !this.loadDefinitionsErrorMessage() &&
+      this.examTypes().some((type) => type.code === model.examTypeCode) &&
+      this.examResultSchemas().some((schema) => schema.code === model.examResultSchemaCode) &&
+      this.examResultDefinitions().length > 0
     );
-    return type?.resultSchemas.filter((schema) => schema.active) ?? [];
-  });
-  protected readonly examResultDefinitions = computed(() => {
-    const schema = this.examResultSchemas().find(
-      (schema) => schema.code === this.createExamRecordModel().examResultSchemaCode,
-    );
-    return schema?.resultDefinitions.filter((definition) => definition.active) ?? [];
   });
   protected readonly records = signal<ExamRecord[]>([]);
   protected readonly loadingExamRecords = signal(false);
@@ -114,14 +127,7 @@ export class Records implements OnInit {
       submission: {
         action: async (field) => {
           const model = field().value();
-          if (
-            this.loadingExamTypes() ||
-            this.loadExamTypesErrorMessage() ||
-            !model.examTypeCode ||
-            !model.examResultSchemaCode ||
-            !this.examResultDefinitions().length
-          )
-            return;
+          if (!this.createCatalogReady()) return;
           const examResults: CreateExamResultRequest[] = [];
           for (const result of model.examResults) {
             if (result.value === null) return;
@@ -204,10 +210,15 @@ export class Records implements OnInit {
     this.loadExamTypes();
   }
 
+  ngOnDestroy(): void {
+    this.schemasRequest?.unsubscribe();
+    this.definitionsRequest?.unsubscribe();
+  }
+
   protected loadExamTypes(): void {
     this.loadingExamTypes.set(true);
     this.loadExamTypesErrorMessage.set('');
-    this.examTypesService.getAll().subscribe({
+    this.examTypesService.getActive().subscribe({
       next: (types) => {
         this.examCatalog.set(types);
         this.loadingExamTypes.set(false);
@@ -226,6 +237,7 @@ export class Records implements OnInit {
       examResultSchemaCode: '',
       examResults: [],
     }));
+    this.loadSchemas();
   }
 
   protected selectExamResultSchema(code: string): void {
@@ -233,11 +245,73 @@ export class Records implements OnInit {
     this.createExamRecordModel.update((model) => ({
       ...model,
       examResultSchemaCode: schema?.code ?? '',
-      examResults:
-        schema?.resultDefinitions
-          .filter((definition) => definition.active)
-          .map((definition) => ({ resultDefinitionCode: definition.code, value: null })) ?? [],
+      examResults: [],
     }));
+    this.loadDefinitions();
+  }
+
+  private clearDefinitions(): void {
+    this.definitionsRequest?.unsubscribe();
+    this.loadingDefinitions.set(false);
+    this.examResultDefinitions.set([]);
+    this.loadDefinitionsErrorMessage.set('');
+    this.createExamRecordModel.update((model) => ({ ...model, examResults: [] }));
+  }
+
+  private clearSchemas(): void {
+    this.schemasRequest?.unsubscribe();
+    this.loadingSchemas.set(false);
+    this.examResultSchemas.set([]);
+    this.loadSchemasErrorMessage.set('');
+    this.createExamRecordModel.update((model) => ({ ...model, examResultSchemaCode: '' }));
+    this.clearDefinitions();
+  }
+
+  protected loadSchemas(): void {
+    this.clearSchemas();
+    const code = this.createExamRecordModel().examTypeCode;
+    if (!this.examTypes().some((type) => type.code === code)) return;
+    this.loadingSchemas.set(true);
+    this.schemasRequest = this.examTypesService.getActiveResultSchemas(code).subscribe({
+      next: (schemas) => {
+        const activeSchemas = schemas.filter((schema) => schema.active);
+        this.examResultSchemas.set(activeSchemas);
+        this.loadingSchemas.set(false);
+        if (activeSchemas.length === 1) this.selectExamResultSchema(activeSchemas[0].code);
+      },
+      error: () => {
+        this.loadingSchemas.set(false);
+        this.loadSchemasErrorMessage.set('Unable to load result schemas.');
+      },
+    });
+  }
+
+  protected loadDefinitions(): void {
+    this.clearDefinitions();
+    const model = this.createExamRecordModel();
+    if (!this.examResultSchemas().some((schema) => schema.code === model.examResultSchemaCode))
+      return;
+    this.loadingDefinitions.set(true);
+    this.definitionsRequest = this.examTypesService
+      .getActiveSchemaResultDefinitions(model.examTypeCode, model.examResultSchemaCode)
+      .subscribe({
+        next: (definitions) => {
+          const activeDefinitions = definitions.filter((definition) => definition.active);
+          this.examResultDefinitions.set(activeDefinitions);
+          this.createExamRecordModel.update((current) => ({
+            ...current,
+            examResults: activeDefinitions.map((definition) => ({
+              resultDefinitionCode: definition.code,
+              value: null,
+            })),
+          }));
+          this.loadingDefinitions.set(false);
+        },
+        error: () => {
+          this.loadingDefinitions.set(false);
+          this.loadDefinitionsErrorMessage.set('Unable to load result fields.');
+        },
+      });
   }
 
   protected loadRecords(): void {
@@ -256,6 +330,7 @@ export class Records implements OnInit {
   }
 
   protected openCreateExamRecordForm(): void {
+    this.clearSchemas();
     this.createExamRecordForm().reset({
       examTypeCode: '',
       examResultSchemaCode: '',
@@ -264,7 +339,7 @@ export class Records implements OnInit {
     });
     this.createExamRecordErrorMessage.set('');
     this.createExamRecordFormOpen.set(true);
-    if (this.editingExamRecord) this.editingExamRecord.set(null);
+    if (this.editingExamRecord()) this.editingExamRecord.set(null);
     afterNextRender(
       () => {
         const select = this.createExamType()?.nativeElement;
@@ -279,6 +354,7 @@ export class Records implements OnInit {
   }
 
   protected closeCreateExamRecordFormWithFocus(): void {
+    this.clearSchemas();
     this.createExamRecordFormOpen.set(false);
 
     afterNextRender(
@@ -301,7 +377,10 @@ export class Records implements OnInit {
     });
     this.updateExamRecordErrorMessage.set('');
     this.editingExamRecord.set(record);
-    if (this.createExamRecordFormOpen) this.createExamRecordFormOpen.set(false);
+    if (this.createExamRecordFormOpen()) {
+      this.createExamRecordFormOpen.set(false);
+      this.clearSchemas();
+    }
     afterNextRender(
       () => {
         for (const result of this.editExamRecordForm.examResults) {

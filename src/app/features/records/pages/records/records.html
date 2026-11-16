@@ -58,7 +58,12 @@
       }
       <form
         [formRoot]="createExamRecordForm"
-        [attr.aria-busy]="createExamRecordForm().submitting()"
+        [attr.aria-busy]="
+          createExamRecordForm().submitting() ||
+          loadingExamTypes() ||
+          loadingSchemas() ||
+          loadingDefinitions()
+        "
         aria-labelledby="records-add-title"
         class="mt-5 space-y-6"
       >
@@ -96,44 +101,72 @@
               </ul>
             }
           </div>
-          <div class="space-y-2">
-            <label for="records-result-schema" class="inline-flex text-sm font-medium"
-              >Result schema</label
-            >
-            <select
-              #createExamResultSchema
-              id="records-result-schema"
-              [formField]="createExamRecordForm.examResultSchemaCode"
-              (change)="selectExamResultSchema(createExamResultSchema.value)"
-              [attr.aria-invalid]="examResultSchemaCodeInvalid()"
-              [attr.aria-describedby]="
-                examResultSchemaCodeInvalid() ? 'records-schema-error' : null
-              "
-              class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
-            >
-              <option value="">Choose a result schema</option>
-              @for (schema of examResultSchemas(); track schema.code) {
-                <option [value]="schema.code">{{ schema.name }}</option>
-              }
-            </select>
-            @if (examResultSchemaCodeInvalid()) {
-              <ul id="records-schema-error" class="text-sm text-error">
-                @for (
-                  error of createExamRecordForm.examResultSchemaCode().errors();
-                  track error.kind
-                ) {
-                  <li>{{ error.message }}</li>
+          @if (loadingSchemas()) {
+            <p role="status" class="text-sm text-text-secondary">Loading result schemas…</p>
+          } @else if (loadSchemasErrorMessage()) {
+            <div class="space-y-3">
+              <p role="alert" class="text-sm text-error">{{ loadSchemasErrorMessage() }}</p>
+              <button
+                type="button"
+                (click)="loadSchemas()"
+                class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover"
+              >
+                Try again
+              </button>
+            </div>
+          } @else if (createExamRecordForm.examTypeCode().value() && !examResultSchemas().length) {
+            <p role="status" class="text-sm text-text-secondary">
+              No result schemas are available for this exam.
+            </p>
+          } @else if (examResultSchemas().length > 1) {
+            <div class="space-y-2">
+              <label for="records-result-schema" class="inline-flex text-sm font-medium"
+                >Result schema</label
+              >
+              <select
+                #createExamResultSchema
+                id="records-result-schema"
+                [formField]="createExamRecordForm.examResultSchemaCode"
+                (change)="selectExamResultSchema(createExamResultSchema.value)"
+                [attr.aria-invalid]="examResultSchemaCodeInvalid()"
+                [attr.aria-describedby]="
+                  examResultSchemaCodeInvalid() ? 'records-schema-error' : null
+                "
+                class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
+              >
+                <option value="">Choose a result schema</option>
+                @for (schema of examResultSchemas(); track schema.code) {
+                  <option [value]="schema.code">{{ schema.name }}</option>
                 }
-              </ul>
-            }
-            @if (createExamRecordForm.examTypeCode().value() && !examResultSchemas().length) {
-              <p role="status" class="text-sm text-text-secondary">
-                No result schemas are available for this exam.
-              </p>
-            }
-          </div>
-          @for (result of createExamRecordForm.examResults; track result) {
-            @let definition = examResultDefinitions()[$index];
+              </select>
+              @if (examResultSchemaCodeInvalid()) {
+                <ul id="records-schema-error" class="text-sm text-error">
+                  @for (
+                    error of createExamRecordForm.examResultSchemaCode().errors();
+                    track error.kind
+                  ) {
+                    <li>{{ error.message }}</li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+          @if (loadingDefinitions()) {
+            <p role="status" class="text-sm text-text-secondary">Loading result fields…</p>
+          } @else if (loadDefinitionsErrorMessage()) {
+            <div class="space-y-3">
+              <p role="alert" class="text-sm text-error">{{ loadDefinitionsErrorMessage() }}</p>
+              <button
+                type="button"
+                (click)="loadDefinitions()"
+                class="min-h-12 cursor-pointer rounded-lg border border-border-strong px-4 py-3 text-sm font-medium text-text-secondary hover:bg-surface-hover"
+              >
+                Try again
+              </button>
+            </div>
+          }
+          @for (definition of examResultDefinitions(); track definition.code) {
+            @let result = createExamRecordForm.examResults[$index];
             @let invalid = result.value().touched() && result.value().invalid();
             <div class="space-y-2">
               <label [for]="'records-result-' + $index" class="inline-flex text-sm font-medium">{{
@@ -166,7 +199,10 @@
             </div>
           }
           @if (
-            createExamRecordForm.examResultSchemaCode().value() && !examResultDefinitions().length
+            createExamRecordForm.examResultSchemaCode().value() &&
+            !loadingDefinitions() &&
+            !loadDefinitionsErrorMessage() &&
+            !examResultDefinitions().length
           ) {
             <p role="status" class="text-sm text-text-secondary">
               No result fields are available for this schema.
@@ -194,14 +230,7 @@
         <div class="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row">
           <button
             type="submit"
-            [disabled]="
-              createExamRecordForm().submitting() ||
-              loadingExamTypes() ||
-              !!loadExamTypesErrorMessage() ||
-              !examTypes().length ||
-              (createExamRecordForm.examResultSchemaCode().value() &&
-                !examResultDefinitions().length)
-            "
+            [disabled]="createExamRecordForm().submitting() || !createCatalogReady()"
             class="flex gap-1 justify-center items-center min-h-12 cursor-pointer rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse enabled:hover:bg-accent-hover disabled:cursor-wait"
           >
             @if (createExamRecordForm().submitting()) {
