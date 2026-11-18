@@ -33,10 +33,6 @@ export class ExamRecordsService {
     });
   }
 
-  public getById(id: string): Observable<ExamRecord> {
-    return this.http.get<ExamRecord>(`${this.apiUrl}/${this.slug}/${id}`);
-  }
-
   public updateById(id: string, request: UpdateExamRecordRequest): Observable<ExamRecord> {
     return this.http.put<ExamRecord>(`${this.apiUrl}/${this.slug}/${id}`, request);
   }

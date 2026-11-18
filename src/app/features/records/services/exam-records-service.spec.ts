@@ -76,32 +76,6 @@ describe('ExamRecordsService', () => {
     expect(response).toEqual([record]);
   });
 
-  it('reads a record with its schema, exam type and historical result definitions', () => {
-    const inactiveDefinition = { ...definition, active: false };
-    const historical: ExamRecord = {
-      ...record,
-      examResultSchema: {
-        ...record.examResultSchema,
-        active: false,
-      },
-      examResults: [
-        {
-          id: 'historical-result',
-          resultDefinition: inactiveDefinition,
-          value: 7,
-        },
-      ],
-    };
-    let response: ExamRecord | undefined;
-    service.getById(record.id).subscribe((value) => {
-      response = value;
-    });
-    const request = http.expectOne(`${url}/${record.id}`);
-    expect(request.request.method).toBe('GET');
-    request.flush(historical);
-    expect(response).toEqual(historical);
-  });
-
   it('creates using only the provided creation DTO', () => {
     const body: CreateExamRecordRequest = {
       examTypeCode: 'PANEL',

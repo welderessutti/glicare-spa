@@ -13,7 +13,6 @@ import {
   required,
   validate,
 } from '@angular/forms/signals';
-import { VerifyEmailStatus } from '../../models/verify-email-status';
 import { ResetPasswordStatus } from '../../models/reset-password-status';
 
 @Component({
