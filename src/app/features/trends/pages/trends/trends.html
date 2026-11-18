@@ -8,20 +8,14 @@
 
   <section
     aria-labelledby="trends-chart-title"
-    [attr.aria-busy]="loadingOptions() || loading() || loadingDefinitions()"
+    [attr.aria-busy]="loadingOptions() || loadingTrend() || loadingDefinitions()"
   >
     <div class="space-y-2 sm:max-w-sm">
       <label for="trends-exam-type" class="inline-flex text-sm font-medium">Exam</label>
       <select
         #examType
         id="trends-exam-type"
-        [disabled]="
-          loadingOptions() ||
-          !!loadOptionsError() ||
-          loading() ||
-          loadingDefinitions() ||
-          !examTypes().length
-        "
+        [disabled]="loadingOptions() || !!loadOptionsError() || !examTypes().length"
         (change)="selectExamType(examType.value)"
         class="min-h-12 w-full min-w-0 rounded-lg border border-border-strong bg-surface-raised px-3 py-3 text-base text-text-primary disabled:bg-surface"
       >
@@ -82,35 +76,6 @@
       </div>
     } @else if (!examTypes().length) {
       <p class="mt-4 text-sm text-text-secondary">No exams are available.</p>
-    } @else if (loading()) {
-      <div class="flex mt-4 gap-1 items-center">
-        <svg
-          class="size-5 animate-spin motion-reduce:animate-none"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
-          <path
-            d="M12 3a9 9 0 0 1 9 9"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
-        <p role="status" class="text-sm text-text-secondary">Loading your records…</p>
-      </div>
-    } @else if (loadRecordsError()) {
-      <div class="mt-4 space-y-3">
-        <p role="alert" class="text-sm text-error">{{ loadRecordsError() }}</p>
-        <button
-          type="button"
-          (click)="loadRecords()"
-          class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover sm:w-auto"
-        >
-          Try again
-        </button>
-      </div>
     } @else if (loadingDefinitions()) {
       <p role="status" class="mt-4 text-sm text-text-secondary">Loading result fields…</p>
     } @else if (loadDefinitionsError()) {
@@ -124,8 +89,21 @@
           Try again
         </button>
       </div>
-    } @else if (records().length && !definitions().length) {
+    } @else if (!definitions().length) {
       <p class="mt-4 text-sm text-text-secondary">No result fields are available for this exam.</p>
+    } @else if (loadingTrend()) {
+      <p role="status" class="mt-4 text-sm text-text-secondary">Loading trend data…</p>
+    } @else if (loadTrendError()) {
+      <div class="mt-4 space-y-3">
+        <p role="alert" class="text-sm text-error">{{ loadTrendError() }}</p>
+        <button
+          type="button"
+          (click)="loadTrend()"
+          class="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-accent px-5 py-3 text-base font-semibold text-text-inverse hover:bg-accent-hover sm:w-auto"
+        >
+          Try again
+        </button>
+      </div>
     } @else {
       @if (chart(); as plot) {
         @let digits = '1.0-3';
@@ -160,7 +138,7 @@
                     vector-effect="non-scaling-stroke"
                     class="text-accent"
                   />
-                  @for (point of plot.points; track point.id) {
+                  @for (point of plot.points; track $index) {
                     <circle
                       [attr.cx]="point.x"
                       [attr.cy]="point.y"
@@ -213,7 +191,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (point of trendPoints(); track point.recordId) {
+                @for (point of trendPoints(); track $index) {
                   <tr>
                     <th scope="row">{{ point.examDate | date: 'MMM d, yyyy' }}</th>
                     <td>
@@ -265,11 +243,9 @@
             </dd>
           </div>
         </dl>
-      } @else if (records().length) {
-        <p class="mt-4 text-sm text-text-secondary">No results are available for this field.</p>
       } @else {
         <div class="mt-4 rounded-xl border border-border bg-surface-light p-6 text-center">
-          <h3 class="font-medium">No data yet</h3>
+          <h3 class="font-medium">No data yet for this metric.</h3>
           <p class="mt-2 text-sm leading-relaxed text-text-secondary">
             Add exam records to see your trend over time.
           </p>

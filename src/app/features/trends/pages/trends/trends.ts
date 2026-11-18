@@ -1,12 +1,21 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, linkedSignal, OnInit, signal } from '@angular/core';
-import { ExamRecord } from '../../../records/models/exam-record';
+import {
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { ExamResultDefinition } from '../../../records/models/exam-result-definition';
 import { ExamType } from '../../../records/models/exam-type';
-import { ExamRecordsService } from '../../../records/services/exam-records-service';
 import { ExamTypesService } from '../../../records/services/exam-types-service';
 import { SettingsService } from '../../../settings/services/settings-service';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of, Subscription } from 'rxjs';
+import { TrendPoint } from '../../models/trend-point';
+import { TrendResponse } from '../../models/trend-response';
+import { TrendsService } from '../../services/trends-service';
 
 @Component({
   imports: [DatePipe, DecimalPipe],
@@ -14,45 +23,46 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
   styleUrl: './trends.css',
   templateUrl: './trends.html',
 })
-export class Trends implements OnInit {
-  private readonly examRecordsService = inject(ExamRecordsService);
+export class Trends implements OnInit, OnDestroy {
+  private readonly trendsService = inject(TrendsService);
   private readonly examTypesService = inject(ExamTypesService);
   private readonly settingsService = inject(SettingsService);
 
+  private optionsRequest: Subscription | undefined;
+  private definitionsRequest: Subscription | undefined;
+  private trendRequest: Subscription | undefined;
+  private readonly trendResponse = signal<TrendResponse | null>(null);
+
   protected readonly examTypes = signal<ExamType[]>([]);
-  protected readonly records = signal<ExamRecord[]>([]);
   protected readonly selectedExamType = signal('');
   protected readonly loadingOptions = signal(false);
   protected readonly loadOptionsError = signal('');
-  protected readonly loading = signal(false);
-  protected readonly loadRecordsError = signal('');
+  protected readonly loadingTrend = signal(false);
+  protected readonly loadTrendError = signal('');
   protected readonly definitions = signal<ExamResultDefinition[]>([]);
   protected readonly loadingDefinitions = signal(false);
   protected readonly loadDefinitionsError = signal('');
 
-  protected readonly selectedExam = computed(() =>
-    this.examTypes().find((type) => type.code === this.selectedExamType()),
+  protected readonly selectedExam = computed(
+    () =>
+      this.trendResponse()?.examType ??
+      this.examTypes().find((type) => type.code === this.selectedExamType()),
   );
   protected readonly selectedResultDefinitionCode = linkedSignal(
     () => this.definitions()[0]?.code ?? '',
   );
-  protected readonly selectedResultDefinition = computed(() =>
-    this.definitions().find(
-      (definition) => definition.code === this.selectedResultDefinitionCode(),
+  protected readonly selectedResultDefinition = computed(
+    () =>
+      this.trendResponse()?.resultDefinition ??
+      this.definitions().find(
+        (definition) => definition.code === this.selectedResultDefinitionCode(),
+      ),
+  );
+  protected readonly trendPoints = computed<TrendPoint[]>(() =>
+    (this.trendResponse()?.points ?? []).filter(
+      (point) => Number.isFinite(point.value) && Number.isFinite(Date.parse(point.examDate)),
     ),
   );
-  protected readonly trendPoints = computed(() => {
-    const definition = this.selectedResultDefinition();
-    if (!definition) return [];
-    return this.records().flatMap((record) => {
-      const result = record.examResults.find(
-        ({ resultDefinition }) => resultDefinition.code === definition.code,
-      );
-      return result && Number.isFinite(result.value) && Number.isFinite(Date.parse(record.examDate))
-        ? [{ recordId: record.id, examDate: record.examDate, value: result.value }]
-        : [];
-    });
-  });
 
   protected readonly summary = computed(() => {
     const points = this.trendPoints();
@@ -84,7 +94,6 @@ export class Trends implements OnInit {
     const start = Date.parse(firstDate);
     const duration = Date.parse(lastDate) - start;
     const points = data.map((point) => ({
-      id: point.recordId,
       x: duration ? 12 + ((Date.parse(point.examDate) - start) / duration) * 616 : 320,
       y: 228 - ((point.value - minimum) / span) * 216,
     }));
@@ -103,11 +112,17 @@ export class Trends implements OnInit {
     this.loadOptions();
   }
 
+  ngOnDestroy(): void {
+    this.optionsRequest?.unsubscribe();
+    this.definitionsRequest?.unsubscribe();
+    this.trendRequest?.unsubscribe();
+  }
+
   protected loadOptions(): void {
     if (this.loadingOptions()) return;
     this.loadingOptions.set(true);
     this.loadOptionsError.set('');
-    forkJoin({
+    this.optionsRequest = forkJoin({
       settings: this.settingsService.get().pipe(catchError(() => of(null))),
       types: this.examTypesService.getAll(),
     })
@@ -118,7 +133,7 @@ export class Trends implements OnInit {
           const selected =
             types.find((type) => type.code === settings?.defaultTrendsExam) ?? types[0];
           this.selectedExamType.set(selected?.code ?? '');
-          this.loadRecords();
+          this.loadDefinitions();
         },
         error: () => {
           this.loadOptionsError.set('Unable to load exam types.');
@@ -129,64 +144,68 @@ export class Trends implements OnInit {
   protected selectExamType(value: string): void {
     if (
       this.loadingOptions() ||
-      this.loading() ||
-      this.loadingDefinitions() ||
+      !!this.loadOptionsError() ||
       value === this.selectedExamType() ||
       !this.examTypes().some((type) => type.code === value)
     )
       return;
     this.selectedExamType.set(value);
-    this.loadRecords();
+    this.loadDefinitions();
   }
 
   protected selectResultDefinition(value: string): void {
     if (
+      this.loadingDefinitions() ||
       value === this.selectedResultDefinitionCode() ||
       !this.definitions().some((definition) => definition.code === value)
     )
       return;
     this.selectedResultDefinitionCode.set(value);
+    this.loadTrend();
   }
 
-  protected loadRecords(): void {
-    const type = this.selectedExamType();
-    if (!type || this.loading() || this.loadingDefinitions()) return;
-    this.records.set([]);
+  private clearTrend(): void {
+    this.trendRequest?.unsubscribe();
+    this.trendResponse.set(null);
+    this.loadingTrend.set(false);
+    this.loadTrendError.set('');
+  }
+
+  protected loadDefinitions(): void {
+    this.definitionsRequest?.unsubscribe();
+    this.clearTrend();
     this.definitions.set([]);
-    this.loading.set(true);
-    this.loadRecordsError.set('');
     this.loadDefinitionsError.set('');
-    this.examRecordsService
-      .getAll({ type, sortBy: 'examDate', sortDirection: 'asc' })
-      .pipe(
-        finalize(() => {
-          this.loading.set(false);
-        }),
-      )
+    const type = this.selectedExamType();
+    if (!type) return;
+    this.loadingDefinitions.set(true);
+    this.definitionsRequest = this.examTypesService
+      .getResultDefinitions(type)
+      .pipe(finalize(() => this.loadingDefinitions.set(false)))
       .subscribe({
-        next: (records) => {
-          this.records.set(records.filter((record) => record.examType.code === type));
-          if (this.records().length) this.loadDefinitions();
+        next: (definitions) => {
+          this.definitions.set(definitions);
+          if (definitions.length) this.loadTrend();
         },
         error: () => {
-          this.loadRecordsError.set('Unable to load records.');
+          this.loadDefinitionsError.set('Unable to load result fields.');
         },
       });
   }
 
-  protected loadDefinitions(): void {
+  protected loadTrend(): void {
     const type = this.selectedExamType();
-    if (!type || !this.records().length || this.loadingDefinitions()) return;
-    this.definitions.set([]);
-    this.loadingDefinitions.set(true);
-    this.loadDefinitionsError.set('');
-    this.examTypesService
-      .getResultDefinitions(type)
-      .pipe(finalize(() => this.loadingDefinitions.set(false)))
+    const definition = this.selectedResultDefinitionCode();
+    if (!type || !this.definitions().some((item) => item.code === definition)) return;
+    this.clearTrend();
+    this.loadingTrend.set(true);
+    this.trendRequest = this.trendsService
+      .get(type, definition)
+      .pipe(finalize(() => this.loadingTrend.set(false)))
       .subscribe({
-        next: (definitions) => this.definitions.set(definitions),
+        next: (response) => this.trendResponse.set(response),
         error: () => {
-          this.loadDefinitionsError.set('Unable to load result fields.');
+          this.loadTrendError.set('Unable to load trend data.');
         },
       });
   }
