@@ -44,13 +44,19 @@ describe('ExamRecordsService', () => {
 
   afterEach(() => http.verify());
 
-  it('lists records with the existing filters and array response contract', () => {
+  it('lists records without filters or query parameters', () => {
+    service.getAll().subscribe((records) => expect(records).toEqual([record]));
+    const request = http.expectOne(url);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual([]);
+    request.flush([record]);
+  });
+
+  it('lists records with supported filters and the array response contract', () => {
     let response: ExamRecord[] | undefined;
     service
       .getAll({
         type: 'PANEL',
-        date: '2026-10-20',
-        result: 0,
         page: 0,
         size: 20,
         sortBy: 'examDate',
@@ -61,17 +67,8 @@ describe('ExamRecordsService', () => {
       });
     const request = http.expectOne((req) => req.url === url);
     expect(request.request.method).toBe('GET');
-    expect(request.request.params.keys().sort()).toEqual([
-      'date',
-      'page',
-      'result',
-      'size',
-      'sort',
-      'type',
-    ]);
+    expect(request.request.params.keys().sort()).toEqual(['page', 'size', 'sort', 'type']);
     expect(request.request.params.get('type')).toBe('PANEL');
-    expect(request.request.params.get('date')).toBe('2026-10-20');
-    expect(request.request.params.get('result')).toBe('0');
     expect(request.request.params.get('page')).toBe('0');
     expect(request.request.params.get('size')).toBe('20');
     expect(request.request.params.get('sort')).toBe('examDate,desc');

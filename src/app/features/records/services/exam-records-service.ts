@@ -21,8 +21,6 @@ export class ExamRecordsService {
     return this.http.get<ExamRecord[]>(`${this.apiUrl}/${this.slug}`, {
       params: {
         ...(filters?.type && { type: filters.type }),
-        ...(filters?.date && { date: filters.date }),
-        ...(filters?.result !== undefined && { result: filters.result.toString() }),
         ...(filters?.page !== undefined && {
           page: filters.page.toString(),
         }),
