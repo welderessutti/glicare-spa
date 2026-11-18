@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { ResendVerification } from './resend-verification';
 
 describe('ResendVerification', () => {
@@ -8,6 +9,7 @@ describe('ResendVerification', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ResendVerification],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ResendVerification);

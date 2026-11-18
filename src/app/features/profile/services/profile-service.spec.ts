@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_URL } from '../../../core/config/api-url';
 import { ProfileService } from './profile-service';
+import { Profile } from '../models/profile';
+import { UpdateProfileRequest } from '../models/requests/update-profile-request';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -18,23 +20,27 @@ describe('ProfileService', () => {
 
   afterEach(() => http.verify());
 
-  it('keeps the existing GET contract', () => {
-    service.getById('user-id').subscribe();
-    const request = http.expectOne(`${API_URL}/profile/user-id`);
+  it('loads the current user profile without a user ID in the URL', () => {
+    const profile: Profile = {
+      fullName: 'Name',
+      email: 'user@example.com',
+      createdAt: '2026-10-15',
+    };
+    service.get().subscribe((response) => expect(response).toEqual(profile));
+    const request = http.expectOne(`${API_URL}/profile`);
     expect(request.request.method).toBe('GET');
-    request.flush({ fullName: 'Name', email: 'user@example.com', createdAt: '2026-10-15' });
+    request.flush(profile);
   });
 
   it('sends only UpdateProfileRequest and returns the updated Profile', () => {
-    const updated = {
+    const updated: Profile = {
       fullName: 'Updated Name',
       email: 'user@example.com',
       createdAt: '2026-10-15',
     };
-    service
-      .updateById('user-id', { fullName: 'Updated Name' })
-      .subscribe((profile) => expect(profile).toEqual(updated));
-    const request = http.expectOne(`${API_URL}/profile/user-id`);
+    const body: UpdateProfileRequest = { fullName: 'Updated Name' };
+    service.update(body).subscribe((profile) => expect(profile).toEqual(updated));
+    const request = http.expectOne(`${API_URL}/profile`);
     expect(request.request.method).toBe('PUT');
     expect(request.request.body).toEqual({ fullName: 'Updated Name' });
     request.flush(updated);

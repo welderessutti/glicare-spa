@@ -53,7 +53,7 @@ describe('Profile', () => {
   }
 
   async function loadProfile(): Promise<void> {
-    http.expectOne(`${API_URL}/profile/session-user`).flush(initialProfile);
+    http.expectOne(`${API_URL}/profile`).flush(initialProfile);
     await render();
   }
 
@@ -98,9 +98,9 @@ describe('Profile', () => {
     expect(page.textContent).toContain('Password hidden');
   });
 
-  it('shows a safe load error and retries the same session ID', async () => {
+  it('shows a safe load error and retries the current user profile', async () => {
     http
-      .expectOne(`${API_URL}/profile/session-user`)
+      .expectOne(`${API_URL}/profile`)
       .flush('Internal details', { status: 500, statusText: 'Error' });
     await render();
     expect(page.querySelector('[role="alert"]')?.textContent).toContain(
@@ -149,7 +149,7 @@ describe('Profile', () => {
     expect(button('Cancel').disabled).toBe(true);
     submit('profile-personal-title');
     await render();
-    const update = http.expectOne(`${API_URL}/profile/session-user`);
+    const update = http.expectOne(`${API_URL}/profile`);
     expect(update.request.method).toBe('PUT');
     expect(update.request.body).toEqual({ fullName: 'Updated Name' });
     update.flush('Internal details', { status: 500, statusText: 'Error' });
@@ -163,7 +163,7 @@ describe('Profile', () => {
     submit('profile-personal-title');
     await render();
     const updated = { ...initialProfile, fullName: 'Canonical Name' };
-    http.expectOne(`${API_URL}/profile/session-user`).flush(updated);
+    http.expectOne(`${API_URL}/profile`).flush(updated);
     await render();
     expect(page.querySelector('form')).toBeNull();
     expect(page.textContent).toContain('Canonical Name');

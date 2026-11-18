@@ -53,8 +53,7 @@ describe('ForgotPassword', () => {
     expect(page.querySelector('[href="/auth/login"]')?.textContent).toContain('Back to sign in');
     expect(emailInput().getAttribute('aria-invalid')).toBe('false');
     expect(page.querySelector('[role="alert"]')).toBeNull();
-    expect(page.querySelector('#forgot-password-success')?.textContent?.trim()).toBe('');
-    expect(page.querySelector('#forgot-password-success')?.getAttribute('role')).toBe('status');
+    expect(page.querySelector('#forgot-password-success')).toBeNull();
   });
 
   it('focuses an empty email and associates the required error without requesting a link', async () => {
@@ -99,7 +98,7 @@ describe('ForgotPassword', () => {
     expect(forgotPassword).toHaveBeenCalledTimes(1);
   });
 
-  it('announces generic success and allows another request without clearing the email', async () => {
+  it('announces generic success and replaces the form with confirmation', async () => {
     await enterEmail();
     submitForm();
     await fixture.whenStable();
@@ -112,11 +111,11 @@ describe('ForgotPassword', () => {
     expect(page.querySelector('#forgot-password-success')?.textContent).toContain(
       'If an account exists for this email, recovery instructions have been sent.',
     );
-    expect(page.querySelector('form')?.getAttribute('aria-busy')).toBe('false');
-    expect(emailInput().matches(':disabled')).toBe(false);
-    expect(emailInput().value).toBe('you@example.com');
-    expect(page.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
-    expect(page.querySelector('#forgot-password-status')?.textContent?.trim()).toBe('');
+    expect(page.querySelector('#forgot-password-success')?.getAttribute('role')).toBe('status');
+    expect(page.querySelector('#forgot-password-success')?.getAttribute('aria-atomic')).toBe('true');
+    expect(page.querySelector('form')).toBeNull();
+    expect(forgotPassword).toHaveBeenCalledExactlyOnceWith({ email: 'you@example.com' });
+    expect(page.querySelector('#forgot-password-status')).toBeNull();
   });
 
   it.each([
@@ -137,24 +136,27 @@ describe('ForgotPassword', () => {
     expect(page.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
   });
 
-  it('clears previous feedback while resending and keeps success and error mutually exclusive', async () => {
+  it('clears previous errors while retrying and keeps success and error mutually exclusive', async () => {
     await enterEmail();
     submitForm();
     await fixture.whenStable();
-    response.next();
+    response.error(new HttpErrorResponse({ status: 500 }));
     await Promise.resolve();
     await fixture.whenStable();
+    expect(page.querySelector('[role="alert"]')).not.toBeNull();
+    expect(page.querySelector('#forgot-password-success')).toBeNull();
 
     response = new Subject<void>();
     forgotPassword.mockReturnValue(response);
     submitForm();
     await fixture.whenStable();
-    expect(page.querySelector('#forgot-password-success')?.textContent?.trim()).toBe('');
+    expect(page.querySelector('#forgot-password-success')).toBeNull();
+    expect(page.querySelector('[role="alert"]')).toBeNull();
     response.error(new HttpErrorResponse({ status: 429 }));
     await Promise.resolve();
     await fixture.whenStable();
     expect(page.querySelector('[role="alert"]')).not.toBeNull();
-    expect(page.querySelector('#forgot-password-success')?.textContent?.trim()).toBe('');
+    expect(page.querySelector('#forgot-password-success')).toBeNull();
 
     response = new Subject<void>();
     forgotPassword.mockReturnValue(response);

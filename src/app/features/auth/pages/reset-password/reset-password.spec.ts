@@ -38,6 +38,13 @@ describe('ResetPassword', () => {
       ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   }
 
+  async function createPage(url = '/?token=test-token'): Promise<void> {
+    await TestBed.inject(Router).navigateByUrl(url);
+    fixture = TestBed.createComponent(ResetPassword);
+    page = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  }
+
   beforeEach(async () => {
     response = new Subject<void>();
     resetPassword.mockReset().mockReturnValue(response);
@@ -46,12 +53,25 @@ describe('ResetPassword', () => {
       providers: [provideRouter([]), { provide: AuthService, useValue: { resetPassword } }],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ResetPassword);
-    page = fixture.nativeElement as HTMLElement;
-    await fixture.whenStable();
+    await createPage();
   });
 
-  afterEach(() => response.complete());
+  afterEach(() => {
+    fixture.destroy();
+    response.complete();
+    vi.useRealTimers();
+  });
+
+  it('shows an unavailable-link message without a token and does not request a reset', async () => {
+    fixture.destroy();
+    await createPage('/');
+    expect(page.querySelector('form')).toBeNull();
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain(
+      'Reset password link unavailable',
+    );
+    expect(page.querySelector('[href="/auth/login"]')).not.toBeNull();
+    expect(resetPassword).not.toHaveBeenCalled();
+  });
 
   it('starts without errors, describes password requirements and offers a return to sign in', () => {
     expect(page.querySelector('h1')?.textContent).toContain('Set a new password');
@@ -238,7 +258,19 @@ describe('ResetPassword', () => {
       password: 'test-password',
       confirmPassword: 'test-password',
     });
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     response.next();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(page.querySelector('form')).toBeNull();
+    expect(page.textContent).toContain('Password updated');
+    expect(page.textContent).toContain('Redirecting you to sign in in 5 seconds');
+    expect(navigate).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(4000);
+    await fixture.whenStable();
+    expect(page.textContent).toContain('Redirecting you to sign in in 1 seconds');
+    expect(navigate).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1000);
     await fixture.whenStable();
     expect(navigate).toHaveBeenCalledExactlyOnceWith(['/auth/login'], {
       queryParams: { passwordReset: true },

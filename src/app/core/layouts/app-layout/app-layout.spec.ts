@@ -89,12 +89,17 @@ describe('AppLayout', () => {
     }
   });
 
-  it('keeps unavailable destinations disabled without creating broken links', () => {
-    const disabled = Array.from(page.querySelectorAll<HTMLButtonElement>('nav button:disabled'));
-    for (const label of ['History']) {
-      expect(disabled.some((button) => button.textContent?.includes(label))).toBe(true);
-    }
-    expect(disabled.every((button) => button.textContent?.includes('Coming soon'))).toBe(true);
+  it('links to the current destinations without creating broken links', () => {
+    const destinations = new Set(
+      Array.from(page.querySelectorAll('nav a[href]'), (link) => link.getAttribute('href')),
+    );
+    expect([...destinations].sort()).toEqual([
+      '/dashboard',
+      '/profile',
+      '/records',
+      '/settings',
+      '/trends',
+    ]);
     expect(
       Array.from(page.querySelectorAll('a[href]')).every((link) =>
         ['/dashboard', '/records', '/trends', '/profile', '/settings', '#app-content'].includes(
@@ -114,10 +119,9 @@ describe('AppLayout', () => {
     ).toBe('Close additional navigation');
   });
 
-  it('links to Trends from the sidebar and the mobile More menu', () => {
-    const links = page.querySelectorAll('nav a[href="/trends"]');
+  it('links to Trends from both primary navigations', () => {
+    const links = page.querySelectorAll('nav[aria-label="Primary"] a[href="/trends"]');
     expect(links).toHaveLength(2);
-    expect(page.querySelector('#app-more-navigation a[href="/trends"]')).not.toBeNull();
     for (const link of links) expect(link.textContent).toContain('Trends');
   });
 

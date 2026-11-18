@@ -226,7 +226,7 @@ describe('Register', () => {
     expect(page.textContent).not.toContain('Internal server details');
   });
 
-  it('preserves the registration payload and navigates to check-email after success', async () => {
+  it('preserves the registration payload and shows verification instructions after success', async () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     await enterDetails();
     submitForm();
@@ -238,7 +238,14 @@ describe('Register', () => {
       confirmPassword: 'test-password',
     });
     response.next();
+    await Promise.resolve();
     await fixture.whenStable();
-    expect(navigate).toHaveBeenCalledExactlyOnceWith(['/auth/check-email']);
+    expect(page.querySelector('form')).toBeNull();
+    expect(page.querySelector('[role="status"]')?.textContent).toContain('Account created');
+    expect(page.querySelector('[role="status"]')?.textContent).toContain(
+      'Check your inbox to verify your email.',
+    );
+    expect(page.querySelector('[href="/auth/login"]')?.textContent).toContain('Go to sign in');
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
