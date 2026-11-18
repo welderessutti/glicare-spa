@@ -9,9 +9,9 @@ import { TrendResponse } from '../../models/trend-response';
 import { Trends } from './trends';
 
 const catalog: ExamType[] = [
-  { id: 'panel', code: 'PANEL', name: 'Backend panel', active: true, resultSchemas: [] },
-  { id: 'thyroid', code: 'TSH', name: 'Backend thyroid exam', active: true, resultSchemas: [] },
-  { id: 'retired', code: 'RETIRED', name: 'Retired exam', active: false, resultSchemas: [] },
+  { id: 'panel', code: 'PANEL', name: 'Backend panel', active: true },
+  { id: 'thyroid', code: 'TSH', name: 'Backend thyroid exam', active: true },
+  { id: 'retired', code: 'RETIRED', name: 'Retired exam', active: false },
 ];
 const fields: ExamResultDefinition[] = [
   { id: 'first', code: 'FIRST', label: 'First measurement', unit: 'unit A', active: true },

@@ -14,8 +14,8 @@ import {
 import { applyEach, form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { ExamRecord } from '../../models/exam-record';
-import { ExamTypeOption } from '../../models/exam-type-option';
-import { ExamResultSchemaOption } from '../../models/exam-result-schema-option';
+import { ExamType } from '../../models/exam-type';
+import { ExamResultSchema } from '../../models/exam-result-schema';
 import { ExamResultDefinition } from '../../models/exam-result-definition';
 import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
 import { CreateExamResultRequest } from '../../models/requests/create-exam-result-request';
@@ -33,7 +33,7 @@ import { ExamTypesService } from '../../services/exam-types-service';
 export class Records implements OnInit, OnDestroy {
   private readonly examRecordsService = inject(ExamRecordsService);
   private readonly examTypesService = inject(ExamTypesService);
-  private readonly examCatalog = signal<ExamTypeOption[]>([]);
+  private readonly examCatalog = signal<ExamType[]>([]);
   private schemasRequest: Subscription | undefined;
   private definitionsRequest: Subscription | undefined;
   private readonly createExamRecordModel = signal<{
@@ -53,7 +53,7 @@ export class Records implements OnInit, OnDestroy {
   protected readonly loadingExamTypes = signal(false);
   protected readonly loadExamTypesErrorMessage = signal('');
   protected readonly examTypes = computed(() => this.examCatalog().filter((type) => type.active));
-  protected readonly examResultSchemas = signal<ExamResultSchemaOption[]>([]);
+  protected readonly examResultSchemas = signal<ExamResultSchema[]>([]);
   protected readonly examResultDefinitions = signal<ExamResultDefinition[]>([]);
   protected readonly loadingSchemas = signal(false);
   protected readonly loadingDefinitions = signal(false);

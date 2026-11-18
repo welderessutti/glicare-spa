@@ -10,52 +10,8 @@ describe('ExamTypesService', () => {
   let service: ExamTypesService;
   let http: HttpTestingController;
   const examTypes: ExamType[] = [
-    {
-      id: 'type-hba1c',
-      code: 'HBA1C',
-      name: 'Hemoglobin A1c',
-      active: true,
-      resultSchemas: [
-        {
-          id: 'schema-hba1c-standard',
-          code: 'STANDARD',
-          name: 'Standard',
-          active: true,
-          resultDefinitions: [
-            {
-              id: 'definition-hba1c-result',
-              code: 'RESULT',
-              label: 'Result',
-              unit: '%',
-              active: true,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'type-glu',
-      code: 'GLU',
-      name: 'Blood Glucose',
-      active: true,
-      resultSchemas: [
-        {
-          id: 'schema-glu-standard',
-          code: 'STANDARD',
-          name: 'Standard',
-          active: true,
-          resultDefinitions: [
-            {
-              id: 'definition-glu-result',
-              code: 'RESULT',
-              label: 'Result',
-              unit: 'mg/dL',
-              active: true,
-            },
-          ],
-        },
-      ],
-    },
+    { id: 'type-hba1c', code: 'HBA1C', name: 'Hemoglobin A1c', active: true },
+    { id: 'type-glu', code: 'GLU', name: 'Blood Glucose', active: true },
   ];
 
   beforeEach(() => {
@@ -68,7 +24,7 @@ describe('ExamTypesService', () => {
 
   afterEach(() => http.verify());
 
-  it('loads the exam catalog with its result schemas and definitions', () => {
+  it('loads the lean exam catalog without nested schemas or definitions', () => {
     let response: ExamType[] | undefined;
     service.getAll().subscribe((types) => {
       response = types;

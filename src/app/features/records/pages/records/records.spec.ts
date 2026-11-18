@@ -5,8 +5,7 @@ import { vi } from 'vitest';
 import { Records } from './records';
 import { ExamRecord } from '../../models/exam-record';
 import { ExamType } from '../../models/exam-type';
-import { ExamTypeOption } from '../../models/exam-type-option';
-import { ExamResultSchemaOption } from '../../models/exam-result-schema-option';
+import { ExamResultSchema } from '../../models/exam-result-schema';
 import { ExamResultDefinition } from '../../models/exam-result-definition';
 import { CreateExamRecordRequest } from '../../models/requests/create-exam-record-request';
 import { UpdateExamRecordRequest } from '../../models/requests/update-exam-record-request';
@@ -15,112 +14,76 @@ import { ExamRecordsService } from '../../services/exam-records-service';
 import { ExamTypesService } from '../../services/exam-types-service';
 
 const catalog: ExamType[] = [
-  {
-    id: 'type-hba1c',
-    code: 'HBA1C',
-    name: 'Catalog A1c',
-    active: true,
-    resultSchemas: [
-      {
-        id: 'schema-hba1c',
-        code: 'STANDARD',
-        name: 'A1c standard',
-        active: true,
-        resultDefinitions: [
-          {
-            id: 'definition-hba1c',
-            code: 'RESULT',
-            label: 'Catalog A1c result',
-            unit: '%',
-            active: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'type-glu',
-    code: 'GLU',
-    name: 'Catalog glucose',
-    active: true,
-    resultSchemas: [
-      {
-        id: 'schema-glu',
-        code: 'STANDARD',
-        name: 'Glucose standard',
-        active: true,
-        resultDefinitions: [
-          {
-            id: 'definition-glu',
-            code: 'RESULT',
-            label: 'Catalog glucose result',
-            unit: 'mg/dL',
-            active: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'type-panel',
-    code: 'PANEL',
-    name: 'Backend panel',
-    active: true,
-    resultSchemas: [
-      {
-        id: 'schema-panel',
-        code: 'STANDARD',
-        name: 'Two measurements',
-        active: true,
-        resultDefinitions: [
-          { id: 'first', code: 'FIRST', label: 'First measurement', unit: 'unit A', active: true },
-          {
-            id: 'retired',
-            code: 'RETIRED',
-            label: 'Retired measurement',
-            unit: 'unit X',
-            active: false,
-          },
-          {
-            id: 'second',
-            code: 'SECOND',
-            label: 'Second measurement',
-            unit: 'unit B',
-            active: true,
-          },
-        ],
-      },
-      {
-        id: 'schema-alternative',
-        code: 'ALTERNATIVE',
-        name: 'Alternative measurement',
-        active: true,
-        resultDefinitions: [
-          {
-            id: 'first',
-            code: 'FIRST',
-            label: 'First measurement',
-            unit: 'unit A',
-            active: true,
-          },
-        ],
-      },
-      {
-        id: 'schema-retired',
-        code: 'RETIRED',
-        name: 'Retired schema',
-        active: false,
-        resultDefinitions: [],
-      },
-    ],
-  },
-  { id: 'type-retired', code: 'RETIRED', name: 'Retired exam', active: false, resultSchemas: [] },
+  { id: 'type-hba1c', code: 'HBA1C', name: 'Catalog A1c', active: true },
+  { id: 'type-glu', code: 'GLU', name: 'Catalog glucose', active: true },
+  { id: 'type-panel', code: 'PANEL', name: 'Backend panel', active: true },
+  { id: 'type-retired', code: 'RETIRED', name: 'Retired exam', active: false },
 ];
+const schemasByExamType: Record<string, ExamResultSchema[]> = {
+  HBA1C: [{ id: 'schema-hba1c', code: 'STANDARD', name: 'A1c standard', active: true }],
+  GLU: [{ id: 'schema-glu', code: 'STANDARD', name: 'Glucose standard', active: true }],
+  PANEL: [
+    { id: 'schema-panel', code: 'STANDARD', name: 'Two measurements', active: true },
+    {
+      id: 'schema-alternative',
+      code: 'ALTERNATIVE',
+      name: 'Alternative measurement',
+      active: true,
+    },
+    { id: 'schema-retired', code: 'RETIRED', name: 'Retired schema', active: false },
+  ],
+};
+const firstDefinition: ExamResultDefinition = {
+  id: 'first',
+  code: 'FIRST',
+  label: 'First measurement',
+  unit: 'unit A',
+  active: true,
+};
+const definitionsBySchema: Record<string, ExamResultDefinition[]> = {
+  'HBA1C/STANDARD': [
+    {
+      id: 'definition-hba1c',
+      code: 'RESULT',
+      label: 'Catalog A1c result',
+      unit: '%',
+      active: true,
+    },
+  ],
+  'GLU/STANDARD': [
+    {
+      id: 'definition-glu',
+      code: 'RESULT',
+      label: 'Catalog glucose result',
+      unit: 'mg/dL',
+      active: true,
+    },
+  ],
+  'PANEL/STANDARD': [
+    firstDefinition,
+    {
+      id: 'retired',
+      code: 'RETIRED',
+      label: 'Retired measurement',
+      unit: 'unit X',
+      active: false,
+    },
+    {
+      id: 'second',
+      code: 'SECOND',
+      label: 'Second measurement',
+      unit: 'unit B',
+      active: true,
+    },
+  ],
+  'PANEL/ALTERNATIVE': [firstDefinition],
+  'PANEL/RETIRED': [],
+};
 
 function record(id: string, code: string, value: number, date: string): ExamRecord {
   const type = catalog.find((type) => type.code === code);
-  const schema = type?.resultSchemas.find((schema) => schema.code === 'STANDARD');
-  const resultDefinition = schema?.resultDefinitions.find(
+  const schema = schemasByExamType[code]?.find((schema) => schema.code === 'STANDARD');
+  const resultDefinition = definitionsBySchema[`${code}/STANDARD`]?.find(
     (definition) => definition.code === 'RESULT',
   );
   if (!type || !schema || !resultDefinition) throw new Error('Missing single-result test fixture');
@@ -137,8 +100,8 @@ function record(id: string, code: string, value: number, date: string): ExamReco
 
 function multiRecord(active = true): ExamRecord {
   const type = catalog[2];
-  const schema = type.resultSchemas[0];
-  const definitions = schema.resultDefinitions
+  const schema = schemasByExamType['PANEL'][0];
+  const definitions = definitionsBySchema['PANEL/STANDARD']
     .filter((definition) => definition.active)
     .map((definition) => ({ ...definition, active }));
   return {
@@ -161,13 +124,13 @@ describe('Records', () => {
   let page: HTMLElement;
   let dialog: HTMLDialogElement;
   let listResponse: Subject<ExamRecord[]>;
-  let catalogResponse: Subject<ExamTypeOption[]>;
+  let catalogResponse: Subject<ExamType[]>;
   let createResponse: Subject<ExamRecord>;
   let updateResponse: Subject<ExamRecord>;
   let deleteResponse: Subject<void>;
   const getAll = vi.fn<(filters?: ExamRecordFiltersRequest) => Observable<ExamRecord[]>>();
-  const getExamTypes = vi.fn<() => Observable<ExamTypeOption[]>>();
-  const getSchemas = vi.fn<(code: string) => Observable<ExamResultSchemaOption[]>>();
+  const getExamTypes = vi.fn<() => Observable<ExamType[]>>();
+  const getSchemas = vi.fn<(code: string) => Observable<ExamResultSchema[]>>();
   const getDefinitions =
     vi.fn<(code: string, schemaCode: string) => Observable<ExamResultDefinition[]>>();
   const create = vi.fn<(request: CreateExamRecordRequest) => Observable<ExamRecord>>();
@@ -219,11 +182,7 @@ describe('Records', () => {
   ): Promise<void> {
     listResponse.next(records);
     listResponse.complete();
-    catalogResponse.next(
-      catalog
-        .filter((type) => type.active)
-        .map(({ id, code, name, active }) => ({ id, code, name, active })),
-    );
+    catalogResponse.next(catalog.filter((type) => type.active));
     await fixture.whenStable();
   }
 
@@ -237,26 +196,18 @@ describe('Records', () => {
 
   beforeEach(async () => {
     listResponse = new Subject<ExamRecord[]>();
-    catalogResponse = new Subject<ExamTypeOption[]>();
+    catalogResponse = new Subject<ExamType[]>();
     createResponse = new Subject<ExamRecord>();
     updateResponse = new Subject<ExamRecord>();
     deleteResponse = new Subject<void>();
     getAll.mockReset().mockReturnValue(listResponse);
     getExamTypes.mockReset().mockReturnValue(catalogResponse);
     getSchemas.mockReset().mockImplementation((code) =>
-      of(
-        catalog
-          .find((type) => type.code === code)
-          ?.resultSchemas.filter((schema) => schema.active)
-          .map(({ id, code, name, active }) => ({ id, code, name, active })) ?? [],
-      ),
+      of(schemasByExamType[code]?.filter((schema) => schema.active) ?? []),
     );
     getDefinitions.mockReset().mockImplementation((code, schemaCode) =>
       of(
-        catalog
-          .find((type) => type.code === code)
-          ?.resultSchemas.find((schema) => schema.code === schemaCode)
-          ?.resultDefinitions.filter((definition) => definition.active) ?? [],
+        definitionsBySchema[`${code}/${schemaCode}`]?.filter((definition) => definition.active) ?? [],
       ),
     );
     create.mockReset().mockReturnValue(createResponse);
@@ -432,7 +383,7 @@ describe('Records', () => {
   });
 
   it('retries schema failures only for the current exam and preserves the exam date', async () => {
-    const pending = new Subject<ExamResultSchemaOption[]>();
+    const pending = new Subject<ExamResultSchema[]>();
     getSchemas.mockReturnValueOnce(pending);
     await load();
     await click(button('Add record'));
@@ -479,7 +430,7 @@ describe('Records', () => {
     await load();
     await click(button('Add record'));
     await fillCreation('PANEL', '12');
-    const obsolete = new Subject<ExamResultSchemaOption[]>();
+    const obsolete = new Subject<ExamResultSchema[]>();
     getSchemas.mockReturnValueOnce(obsolete);
     await enter('#records-exam-type', 'HBA1C');
     expect(page.querySelector('#records-result-0')).toBeNull();
@@ -547,7 +498,7 @@ describe('Records', () => {
     expect(element('#records-result-unit-0').textContent?.trim()).toBe('unit A');
     expect(element('#records-result-unit-1').textContent?.trim()).toBe('unit B');
     expect(page.textContent).not.toContain('Retired measurement');
-    expect(catalog[2].resultSchemas[0].resultDefinitions).toHaveLength(3);
+    expect(definitionsBySchema['PANEL/STANDARD']).toHaveLength(3);
     await enter('#records-result-1', '24');
     await enter('#records-result-schema', 'ALTERNATIVE');
     expect(element<HTMLInputElement>('#records-result-0').value).toBe('');

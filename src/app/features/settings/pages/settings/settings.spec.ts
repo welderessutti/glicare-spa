@@ -11,14 +11,13 @@ import { Settings } from './settings';
 
 const initialSettings: SettingsModel = { defaultTrendsExam: 'PANEL', language: 'en' };
 const catalog: ExamType[] = [
-  { id: 'type-panel', code: 'PANEL', name: 'Backend panel', active: true, resultSchemas: [] },
-  { id: 'type-tsh', code: 'TSH', name: 'Backend thyroid exam', active: true, resultSchemas: [] },
+  { id: 'type-panel', code: 'PANEL', name: 'Backend panel', active: true },
+  { id: 'type-tsh', code: 'TSH', name: 'Backend thyroid exam', active: true },
   {
     id: 'type-retired',
     code: 'RETIRED',
     name: 'Historical exam',
     active: false,
-    resultSchemas: [],
   },
 ];
 const pausedReminder: ExamReminder = {

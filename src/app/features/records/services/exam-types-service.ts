@@ -4,8 +4,7 @@ import { API_URL } from '../../../core/config/api-url';
 import { Observable } from 'rxjs';
 import { ExamType } from '../models/exam-type';
 import { ExamResultDefinition } from '../models/exam-result-definition';
-import { ExamTypeOption } from '../models/exam-type-option';
-import { ExamResultSchemaOption } from '../models/exam-result-schema-option';
+import { ExamResultSchema } from '../models/exam-result-schema';
 
 @Service()
 export class ExamTypesService {
@@ -17,14 +16,14 @@ export class ExamTypesService {
     return this.http.get<ExamType[]>(`${this.apiUrl}/${this.slug}`);
   }
 
-  public getActive(): Observable<ExamTypeOption[]> {
-    return this.http.get<ExamTypeOption[]>(`${this.apiUrl}/${this.slug}`, {
+  public getActive(): Observable<ExamType[]> {
+    return this.http.get<ExamType[]>(`${this.apiUrl}/${this.slug}`, {
       params: { active: true },
     });
   }
 
-  public getActiveResultSchemas(examTypeCode: string): Observable<ExamResultSchemaOption[]> {
-    return this.http.get<ExamResultSchemaOption[]>(
+  public getActiveResultSchemas(examTypeCode: string): Observable<ExamResultSchema[]> {
+    return this.http.get<ExamResultSchema[]>(
       `${this.apiUrl}/${this.slug}/${encodeURIComponent(examTypeCode)}/result-schemas`,
       { params: { active: true } },
     );
